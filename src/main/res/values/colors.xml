@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="accent" type="color">#ff638ce8</item>
+    <item name="primary" type="color">#ff33ccaa</item>
+    <item name="primary_dark" type="color">#ff2aab8e</item>
+
+    <integer-array name="androidcolors">
+        <item>@color/accent</item>
+        <item>@color/primary</item>
+        <item>@color/primary_dark</item>
+    </integer-array>
+</resources>
