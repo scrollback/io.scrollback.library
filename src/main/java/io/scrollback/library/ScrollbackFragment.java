@@ -209,6 +209,12 @@ public abstract class ScrollbackFragment extends Fragment {
 
             @SuppressWarnings("unused")
             @JavascriptInterface
+            public String getPackageName() {
+                return getActivity().getPackageName();
+            }
+
+            @SuppressWarnings("unused")
+            @JavascriptInterface
             public boolean isFileUploadAvailable(final boolean needsCorrectMimeType) {
                 if (Build.VERSION.SDK_INT == 19) {
                     final String platformVersion = (Build.VERSION.RELEASE == null) ? "" : Build.VERSION.RELEASE;
