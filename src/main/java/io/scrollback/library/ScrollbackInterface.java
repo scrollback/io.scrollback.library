@@ -29,7 +29,6 @@ public abstract class ScrollbackInterface {
     @JavascriptInterface
     public void showToast(String toast) {
         Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show();
-
     }
 
     @SuppressWarnings("unused")
@@ -72,7 +71,6 @@ public abstract class ScrollbackInterface {
 
         mContext.startActivity(Intent.createChooser(sharingIntent, title));
     }
-
 
     public abstract void googleLogin();
 

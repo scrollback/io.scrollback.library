@@ -87,11 +87,23 @@ public abstract class ScrollbackFragment extends Fragment {
 
     private CallbackManager callbackManager;
 
+    private Bridge bridge;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         View v = inflater.inflate(R.layout.fragment_scrollback, container, false);
+
         mWebView = (WebView) v.findViewById(R.id.scrollback_webview);
+
+        bridge = new Bridge(mWebView);
+
+        bridge.setOnMessageListener(new MessageListener() {
+            @Override
+            public void onMessage(String message) {
+                // TODO
+            }
+        });
 
         mProgressBar = (ProgressBar) v.findViewById(R.id.scrollback_pgbar);
         mLoadError = (TextView) v.findViewById(R.id.scrollback_loaderror);
@@ -203,6 +215,12 @@ public abstract class ScrollbackFragment extends Fragment {
         }
 
         mWebView.addJavascriptInterface(new ScrollbackInterface(getActivity()) {
+
+            @SuppressWarnings("unused")
+            @JavascriptInterface
+            public void postMessage(String json) {
+                bridge.receiveMessage(json);
+            }
 
             @SuppressWarnings("unused")
             @JavascriptInterface
@@ -377,24 +395,24 @@ public abstract class ScrollbackFragment extends Fragment {
     void emitGoogleLoginEvent(String token) {
         Log.d("emitGoogleLoginEvent", "email:"+accountName+" token:"+token);
 
-        mWebView.loadUrl("javascript:window.dispatchEvent(new CustomEvent('login', { detail :{'provider': 'google', 'email': '" + accountName + "', 'token': '" + token + "'} }))");
+        bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('login', { detail :{'provider': 'google', 'email': '" + accountName + "', 'token': '" + token + "'} }))");
     }
 
     void emitFacebookLoginEvent(String email, String token) {
         Log.d("emitFacebookLoginEvent", "email:"+email+" token:"+token);
 
-        mWebView.loadUrl("javascript:window.dispatchEvent(new CustomEvent('login', { detail :{'provider': 'facebook', 'email': '" + email + "', 'token': '" + token + "'} }))");
+        bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('login', { detail :{'provider': 'facebook', 'email': '" + email + "', 'token': '" + token + "'} }))");
 
     }
 
     void emitGCMRegisterEvent(String regid, String uuid, String model) {
         Log.d("emitGCMRegisterEvent", "uuid:"+uuid+" regid:"+regid);
 
-        mWebView.loadUrl("javascript:window.dispatchEvent(new CustomEvent('gcm_register', { detail :{'regId': '" + regid + "', 'uuid': '" + uuid + "', 'model': '" + model + "'} }))");
+        bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('gcm_register', { detail :{'regId': '" + regid + "', 'uuid': '" + uuid + "', 'model': '" + model + "'} }))");
     }
 
     void emitGCMUnregisterEvent(String uuid) {
-        mWebView.loadUrl("javascript:window.dispatchEvent(new CustomEvent('gcm_unregister', { detail :{'uuid': '" + uuid + "'} }))");
+        bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('gcm_unregister', { detail :{'uuid': '" + uuid + "'} }))");
     }
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {
