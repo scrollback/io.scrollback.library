@@ -60,9 +60,6 @@ import java.util.Arrays;
 
 import static android.webkit.WebSettings.LOAD_DEFAULT;
 
-/**
- * Created by karthikbalakrishnan on 11/07/15.
- */
 public abstract class ScrollbackFragment extends Fragment {
 
     private static final String TAG = "android_wrapper";
@@ -209,30 +206,6 @@ public abstract class ScrollbackFragment extends Fragment {
 
             @SuppressWarnings("unused")
             @JavascriptInterface
-            public String getPackageName() {
-                return getActivity().getPackageName();
-            }
-
-            @SuppressWarnings("unused")
-            @JavascriptInterface
-            public boolean isFileUploadAvailable(final boolean needsCorrectMimeType) {
-                if (Build.VERSION.SDK_INT == 19) {
-                    final String platformVersion = (Build.VERSION.RELEASE == null) ? "" : Build.VERSION.RELEASE;
-
-                    return !needsCorrectMimeType && (platformVersion.startsWith("4.4.3") || platformVersion.startsWith("4.4.4"));
-                } else {
-                    return true;
-                }
-            }
-
-            @SuppressWarnings("unused")
-            @JavascriptInterface
-            public boolean isFileUploadAvailable() {
-                return isFileUploadAvailable(false);
-            }
-
-            @SuppressWarnings("unused")
-            @JavascriptInterface
             public void setStatusBarColor() {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
@@ -263,29 +236,6 @@ public abstract class ScrollbackFragment extends Fragment {
                         }
                     }
                 });
-            }
-
-            @SuppressWarnings("unused")
-            @JavascriptInterface
-            public void shareItem(String title, String content) {
-                Intent sharingIntent = new Intent(Intent.ACTION_SEND);
-
-                sharingIntent.setType("text/plain");
-                sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, content);
-
-                startActivity(Intent.createChooser(sharingIntent, title));
-            }
-
-            @SuppressWarnings("unused")
-            @JavascriptInterface
-            public void copyToClipboard(String label, String text) {
-                ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(getActivity().CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText(label, text);
-
-                clipboard.setPrimaryClip(clip);
-
-                Toast toast = Toast.makeText(getActivity(), getString(R.string.clipboard_success), Toast.LENGTH_SHORT);
-                toast.show();
             }
 
             @SuppressWarnings("unused")
