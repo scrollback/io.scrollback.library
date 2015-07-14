@@ -37,5 +37,9 @@ public class JSONMessage {
     public JSONObject getJSONObject() {
         return json;
     }
+
+    public String toString() {
+        return json.toString();
+    }
 }
 
