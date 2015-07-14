@@ -373,13 +373,13 @@ public abstract class ScrollbackFragment extends Fragment {
     void emitGoogleLoginEvent(String token) {
         Log.d("emitGoogleLoginEvent", "token: " + token);
 
-        bridge.postMessage(new AuthRequest("{ \"provider\": \"google\", \"token\": \"" + token + "\" }"));
+        bridge.postMessage(new AuthRequest("{ provider: 'google', token: '" + token + "' }"));
     }
 
     void emitFacebookLoginEvent(String email, String token) {
         Log.d("emitFacebookLoginEvent", "token: " + token);
 
-        bridge.postMessage(new AuthRequest("{ \"provider\": \"facebook\", \"token\": \"" + token + "\" }"));
+        bridge.postMessage(new AuthRequest("{ provider: 'facebook', token: '" + token + "' }"));
     }
 
     void emitGCMRegisterEvent(String regid, String uuid, String model) {

@@ -31,7 +31,7 @@ public class Bridge {
     }
 
     public void postMessage(final String message) {
-        evaluateJavascript("window.postMessage('" + message.replace("'", "\\'") + "', '*')");
+        evaluateJavascript("window.postMessage(JSON.stringify(" + message + "), '*')");
     }
 
     public void postMessage(final JSONObject message) {
