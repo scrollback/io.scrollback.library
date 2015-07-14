@@ -3,7 +3,7 @@ package io.scrollback.library;
 public class Constants {
     public static final String TAG = "scrollback-android-sdk";
 
-    public static final String ORIGIN = "scrollback.io";
+    public static final String ORIGIN = "stage.scrollback.io";
     public static final String INDEX = "https://" + ORIGIN;
 
     public static final String HOME = INDEX + "/me";

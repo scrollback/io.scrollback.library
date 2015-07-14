@@ -38,6 +38,10 @@ public class Bridge {
         postMessage(message.toString());
     }
 
+    public void postMessage(final JSONMessage message) {
+        postMessage(message.toString());
+    }
+
     public void receiveMessage(final String message) {
         if (listener != null) {
             listener.onMessage(message);

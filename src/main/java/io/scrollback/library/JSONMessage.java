@@ -22,7 +22,7 @@ public class JSONMessage {
 
             if (j != null) {
                 try {
-                    json.put("type", type);
+                    j.put("type", type);
                 } catch (JSONException e) {
                     Log.e(Constants.TAG, "Failed to set type for " + type + " " + e);
                 }

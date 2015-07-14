@@ -371,16 +371,15 @@ public abstract class ScrollbackFragment extends Fragment {
      */
 
     void emitGoogleLoginEvent(String token) {
-        Log.d("emitGoogleLoginEvent", "email:"+accountName+" token:"+token);
+        Log.d("emitGoogleLoginEvent", "token: " + token);
 
-        bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('login', { detail :{'provider': 'google', 'email': '" + accountName + "', 'token': '" + token + "'} }))");
+        bridge.postMessage(new AuthRequest("{ \"provider\": \"google\", \"token\": \"" + token + "\" }"));
     }
 
     void emitFacebookLoginEvent(String email, String token) {
-        Log.d("emitFacebookLoginEvent", "email:"+email+" token:"+token);
+        Log.d("emitFacebookLoginEvent", "token: " + token);
 
-        bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('login', { detail :{'provider': 'facebook', 'email': '" + email + "', 'token': '" + token + "'} }))");
-
+        bridge.postMessage(new AuthRequest("{ \"provider\": \"facebook\", \"token\": \"" + token + "\" }"));
     }
 
     void emitGCMRegisterEvent(String regid, String uuid, String model) {
