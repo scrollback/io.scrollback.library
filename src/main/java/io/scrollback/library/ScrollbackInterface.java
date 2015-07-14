@@ -1,5 +1,6 @@
 package io.scrollback.library;
 
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -70,6 +71,44 @@ public abstract class ScrollbackInterface {
         sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, content);
 
         mContext.startActivity(Intent.createChooser(sharingIntent, title));
+    }
+
+    @SuppressWarnings("unused")
+    @JavascriptInterface
+    public void setStatusBarColor() {
+        final Activity activity = ((Activity) mContext);
+
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    try {
+                        activity.getWindow().setStatusBarColor(mContext.getResources().getColor(R.color.primary_dark));
+                    } catch (Exception e) {
+                        Log.e(Constants.TAG, "Failed to set statusbar color " + e);
+                    }
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings("unused")
+    @JavascriptInterface
+    public void setStatusBarColor(final String color) {
+        final Activity activity = ((Activity) mContext);
+
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    try {
+                        activity.getWindow().setStatusBarColor(Color.parseColor(color));
+                    } catch (Exception e) {
+                        Log.e(Constants.TAG, "Failed to set statusbar color to " + color + " " + e);
+                    }
+                }
+            }
+        });
     }
 
     public abstract void googleLogin();

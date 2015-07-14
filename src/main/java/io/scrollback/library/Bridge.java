@@ -33,6 +33,8 @@ public class Bridge {
     }
 
     public void receiveMessage(final String message) {
-        listener.onMessage(message);
+        if (listener != null) {
+            listener.onMessage(message);
+        }
     }
 }

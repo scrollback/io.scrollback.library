@@ -5,14 +5,11 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -62,8 +59,6 @@ import static android.webkit.WebSettings.LOAD_DEFAULT;
 
 public abstract class ScrollbackFragment extends Fragment {
 
-    private static final String TAG = "android_wrapper";
-
     private String accountName;
     private String accessToken;
 
@@ -83,6 +78,7 @@ public abstract class ScrollbackFragment extends Fragment {
 
     private final int REQUEST_SELECT_FILE_LEGACY = 19264;
     private final int REQUEST_SELECT_FILE = 19275;
+
     private boolean debugMode = true;
 
     private CallbackManager callbackManager;
@@ -121,7 +117,7 @@ public abstract class ScrollbackFragment extends Fragment {
             gcm = GoogleCloudMessaging.getInstance(getActivity());
             regid = getRegistrationId(getActivity());
         } else {
-            Log.i(TAG, "No valid Google Play Services APK found.");
+            Log.e(Constants.TAG, "No valid Google Play Services APK found.");
         }
 
         mWebView.setWebViewClient(mWebViewClient);
@@ -220,40 +216,6 @@ public abstract class ScrollbackFragment extends Fragment {
             @JavascriptInterface
             public void postMessage(String json) {
                 bridge.receiveMessage(json);
-            }
-
-            @SuppressWarnings("unused")
-            @JavascriptInterface
-            public void setStatusBarColor() {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            try {
-                                getActivity().getWindow().setStatusBarColor(getResources().getColor(R.color.primary_dark));
-                            } catch (Exception e) {
-                                Log.d(TAG, "Failed to set statusbar color " + e);
-                            }
-                        }
-                    }
-                });
-            }
-
-            @SuppressWarnings("unused")
-            @JavascriptInterface
-            public void setStatusBarColor(final String color) {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            try {
-                                getActivity().getWindow().setStatusBarColor(Color.parseColor(color));
-                            } catch (Exception e) {
-                                Log.d(TAG, "Failed to set statusbar color to " + color + " " + e);
-                            }
-                        }
-                    }
-                });
             }
 
             @SuppressWarnings("unused")
@@ -450,8 +412,6 @@ public abstract class ScrollbackFragment extends Fragment {
 
 
             } else {
-                Log.d(TAG, uri.getAuthority() + " is not " + Constants.ORIGIN);
-
                 // Otherwise, the link is not for a page on my site, so launch another Activity that handles URLs
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 startActivity(intent);
@@ -561,11 +521,11 @@ public abstract class ScrollbackFragment extends Fragment {
             try {
                 token = GoogleAuthUtil.getToken(getActivity(), accountName, scopes);
             } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
+                Log.e(Constants.TAG, e.getMessage());
             } catch (UserRecoverableAuthException e) {
                 startActivityForResult(e.getIntent(), Constants.REQ_SIGN_IN_REQUIRED);
             } catch (GoogleAuthException e) {
-                Log.e(TAG, e.getMessage());
+                Log.e(Constants.TAG, e.getMessage());
             }
 
             return token;
@@ -611,9 +571,9 @@ public abstract class ScrollbackFragment extends Fragment {
 
                 result = "true";
             } catch (GoogleAuthException e) {
-                Log.e(TAG, e.getMessage());
+                Log.e(Constants.TAG, e.getMessage());
             } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
+                Log.e(Constants.TAG, e.getMessage());
             }
 
             return result;
@@ -744,7 +704,7 @@ public abstract class ScrollbackFragment extends Fragment {
         final SharedPreferences prefs = getGCMPreferences();
         int appVersion = getAppVersion(context);
 
-        Log.v(TAG, "Saving regId on app version " + appVersion);
+        Log.v(Constants.TAG, "Saving regId on app version " + appVersion);
 
         SharedPreferences.Editor editor = prefs.edit();
 
@@ -766,7 +726,7 @@ public abstract class ScrollbackFragment extends Fragment {
         final String registrationId = prefs.getString(Constants.PROPERTY_REG_ID, "");
 
         if (registrationId.length() == 0) {
-            Log.v(TAG, "Registration not found.");
+            Log.d(Constants.TAG, "Registration not found.");
 
             return "";
         }
@@ -777,7 +737,7 @@ public abstract class ScrollbackFragment extends Fragment {
         int currentVersion = getAppVersion(context);
 
         if (registeredVersion != currentVersion) {
-            Log.v(TAG, "App version changed or registration expired.");
+            Log.d(Constants.TAG, "App version changed or registration expired.");
 
             return "";
         }
@@ -820,7 +780,7 @@ public abstract class ScrollbackFragment extends Fragment {
                 GooglePlayServicesUtil.getErrorDialog(resultCode, getActivity(),
                         Constants.PLAY_SERVICES_RESOLUTION_REQUEST).show();
             } else {
-                Log.i(TAG, "This device is not supported.");
+                Log.d(Constants.TAG, "This device is not supported.");
 
             }
 
