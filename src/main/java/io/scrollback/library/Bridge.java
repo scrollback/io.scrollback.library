@@ -3,6 +3,8 @@ package io.scrollback.library;
 import android.os.Build;
 import android.webkit.WebView;
 
+import org.json.JSONObject;
+
 public class Bridge {
     WebView mWebView;
     MessageListener listener;
@@ -30,6 +32,10 @@ public class Bridge {
 
     public void postMessage(final String message) {
         evaluateJavascript("window.postMessage('" + message.replace("'", "\\'") + "', '*')");
+    }
+
+    public void postMessage(final JSONObject message) {
+        postMessage(message.toString());
     }
 
     public void receiveMessage(final String message) {

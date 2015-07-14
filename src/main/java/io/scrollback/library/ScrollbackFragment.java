@@ -79,11 +79,21 @@ public abstract class ScrollbackFragment extends Fragment {
     private final int REQUEST_SELECT_FILE_LEGACY = 19264;
     private final int REQUEST_SELECT_FILE = 19275;
 
-    private boolean debugMode = true;
+    private boolean debugMode = false;
 
     private CallbackManager callbackManager;
 
     private Bridge bridge;
+
+    private ScrollbackMessageHandler messagehandler;
+
+    public void setEnableDebug(boolean debug) {
+        debugMode = true;
+    }
+
+    public void setMessageHandler(ScrollbackMessageHandler handler) {
+        messagehandler = handler;
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -94,12 +104,7 @@ public abstract class ScrollbackFragment extends Fragment {
 
         bridge = new Bridge(mWebView);
 
-        bridge.setOnMessageListener(new MessageListener() {
-            @Override
-            public void onMessage(String message) {
-                // TODO
-            }
-        });
+        bridge.setOnMessageListener(messagehandler);
 
         mProgressBar = (ProgressBar) v.findViewById(R.id.scrollback_pgbar);
         mLoadError = (TextView) v.findViewById(R.id.scrollback_loaderror);
