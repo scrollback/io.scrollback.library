@@ -80,15 +80,20 @@ public abstract class ScrollbackFragment extends Fragment {
     private final int REQUEST_SELECT_FILE = 19275;
 
     private boolean debugMode = false;
+    private String widgetName = "";
+
+    private ScrollbackMessageHandler messagehandler;
 
     private CallbackManager callbackManager;
 
     private Bridge bridge;
 
-    private ScrollbackMessageHandler messagehandler;
-
     public void setEnableDebug(boolean debug) {
         debugMode = true;
+    }
+
+    public void setWidgetName(String name) {
+        widgetName = name;
     }
 
     public void setMessageHandler(ScrollbackMessageHandler handler) {
@@ -216,6 +221,12 @@ public abstract class ScrollbackFragment extends Fragment {
         }
 
         mWebView.addJavascriptInterface(new ScrollbackInterface(getActivity()) {
+
+            @SuppressWarnings("unused")
+            @JavascriptInterface
+            public String getWidgetName() {
+                return widgetName;
+            }
 
             @SuppressWarnings("unused")
             @JavascriptInterface
