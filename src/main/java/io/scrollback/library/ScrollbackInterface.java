@@ -111,6 +111,10 @@ public abstract class ScrollbackInterface {
         });
     }
 
+    public abstract void postMessage(String json);
+
+    public abstract void onFinishedLoading();
+
     public abstract void googleLogin();
 
     public abstract void facebookLogin();
@@ -118,6 +122,4 @@ public abstract class ScrollbackInterface {
     public abstract void registerGCM();
 
     public abstract void unregisterGCM();
-
-    public abstract void onFinishedLoading();
 }
