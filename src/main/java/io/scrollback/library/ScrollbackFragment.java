@@ -376,14 +376,14 @@ public abstract class ScrollbackFragment extends Fragment {
         bridge.postMessage(new AuthRequest("{ provider: 'google', token: '" + token + "' }"));
     }
 
-    void emitFacebookLoginEvent(String email, String token) {
+    void emitFacebookLoginEvent(String token) {
         Log.d("emitFacebookLoginEvent", "token: " + token);
 
         bridge.postMessage(new AuthRequest("{ provider: 'facebook', token: '" + token + "' }"));
     }
 
     void emitGCMRegisterEvent(String regid, String uuid, String model) {
-        Log.d("emitGCMRegisterEvent", "uuid:"+uuid+" regid:"+regid);
+        Log.d("emitGCMRegisterEvent", "uuid: " + uuid + " regid: " + regid);
 
         bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('gcm_register', { detail :{'regId': '" + regid + "', 'uuid': '" + uuid + "', 'model': '" + model + "'} }))");
     }
@@ -446,7 +446,7 @@ public abstract class ScrollbackFragment extends Fragment {
         @Override
         public void onSuccess(final LoginResult loginResult) {
 
-            if(loginResult.getRecentlyGrantedPermissions().contains("email")) {
+            if (loginResult.getRecentlyGrantedPermissions().contains("email")) {
                 GraphRequest.newMeRequest(
                         loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
                             @Override
@@ -454,15 +454,14 @@ public abstract class ScrollbackFragment extends Fragment {
                                 if (response.getError() != null) {
                                     // handle error
                                 } else {
-                                    String email = me.optString("email");
-                                    emitFacebookLoginEvent(email, loginResult.getAccessToken().getToken());
+                                    emitFacebookLoginEvent(loginResult.getAccessToken().getToken());
                                     // send email and id to your web server
                                 }
                             }
                         }).executeAsync();
             }
             else {
-                Toast.makeText(getActivity(), "Something is wrong", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), getString(R.string.signin_fail_error), Toast.LENGTH_SHORT).show();
             }
 
 
