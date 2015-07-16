@@ -19,7 +19,7 @@ public class AuthStatus extends JSONMessage {
         }
     }
 
-    AuthStatus(JSONObject message) {
+    public AuthStatus(JSONObject message) {
         super(message);
     }
 }

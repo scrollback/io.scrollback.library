@@ -76,11 +76,11 @@ public class NavMessage extends JSONMessage {
         }
     }
 
-    NavMessage(JSONObject message) {
+    public NavMessage(JSONObject message) {
         super(message);
     }
 
-    NavMessage(String message) {
+    public NavMessage(String message) {
         super(message, "nav");
     }
 }

@@ -35,11 +35,15 @@ public class Bridge {
     }
 
     public void postMessage(final JSONObject message) {
-        postMessage(message.toString());
+        if (message != null) {
+            postMessage(message.toString());
+        }
     }
 
     public void postMessage(final JSONMessage message) {
-        postMessage(message.toString());
+        if (message != null) {
+            postMessage(message.toString());
+        }
     }
 
     public void receiveMessage(final String message) {

@@ -39,7 +39,11 @@ public class JSONMessage {
     }
 
     public String toString() {
-        return json.toString();
+        if (json != null) {
+            return json.toString();
+        }
+
+        return null;
     }
 }
 

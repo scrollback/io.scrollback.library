@@ -21,11 +21,11 @@ public class FollowMessage extends JSONMessage {
         }
     }
 
-    FollowMessage(JSONObject message) {
+    public FollowMessage(JSONObject message) {
         super(message);
     }
 
-    FollowMessage(String message) {
+    public FollowMessage(String message) {
         super(message, "follow");
     }
 }

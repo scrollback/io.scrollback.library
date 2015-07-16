@@ -109,6 +109,12 @@ public abstract class ScrollbackFragment extends Fragment {
         messagehandler = handler;
     }
 
+    public void postMessage(JSONMessage message) {
+        if (bridge != null) {
+            bridge.postMessage(message);
+        }
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
