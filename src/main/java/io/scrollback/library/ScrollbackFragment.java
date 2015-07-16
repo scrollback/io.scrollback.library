@@ -58,7 +58,6 @@ import java.util.Arrays;
 import static android.webkit.WebSettings.LOAD_DEFAULT;
 
 public abstract class ScrollbackFragment extends Fragment {
-
     private String accountName;
     private String accessToken;
 
@@ -87,6 +86,16 @@ public abstract class ScrollbackFragment extends Fragment {
     private CallbackManager callbackManager;
 
     private Bridge bridge;
+
+    public static String origin = Constants.HOST;
+    public static String index = Constants.PROTOCOL + "//" + origin;
+    public static String home = index + Constants.PATH;
+
+    public void setLocation(String protocol, String host, String path) {
+        origin = host;
+        index = protocol + "//" + origin;
+        home = index + path;
+    }
 
     public void setEnableDebug(boolean debug) {
         debugMode = true;
@@ -282,21 +291,7 @@ public abstract class ScrollbackFragment extends Fragment {
             }
         }, "Android");
 
-//        Intent intent = getIntent();
-//        String action = intent.getAction();
-//        Uri uri = intent.getData();
-//
-//        if (intent.hasExtra("scrollback_path")) {
-//            //mWebView.loadUrl(Constants.INDEX + getIntent().getStringExtra("scrollback_path"));
-//        } else if (Intent.ACTION_VIEW.equals(action) && uri != null) {
-//            final String URL = uri.toString();
-//
-//            mWebView.loadUrl(URL);
-//        } else {
-//            mWebView.loadUrl(Constants.HOME);
-//        }
-
-        mWebView.loadUrl(Constants.HOME);
+        mWebView.loadUrl(home);
 
         mLoadError.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -350,7 +345,6 @@ public abstract class ScrollbackFragment extends Fragment {
     }
 
     void doFacebookLogin() {
-
         LoginManager.getInstance().logInWithReadPermissions(this, Arrays.asList("public_profile", "email"));
 
     }
@@ -364,11 +358,6 @@ public abstract class ScrollbackFragment extends Fragment {
         mProgressBar.setVisibility(View.VISIBLE);
         mWebView.setVisibility(View.GONE);
     }
-
-    /*
-        javascript:window.postMessage({ type:"signin", provider:"google", token":"asss"}, '*');
-
-     */
 
     void emitGoogleLoginEvent(String token) {
         Log.d("emitGoogleLoginEvent", "token: " + token);
@@ -395,7 +384,7 @@ public abstract class ScrollbackFragment extends Fragment {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             // Check if the key event was the Back button and if there's history
-            if (mWebView.getUrl().equals(Constants.HOME) || !mWebView.canGoBack()) {
+            if (mWebView.getUrl().equals(home) || !mWebView.canGoBack()) {
                 return getActivity().onKeyDown(keyCode, event);
             } else if (mWebView.canGoBack()) {
                 mWebView.goBack();
@@ -421,7 +410,7 @@ public abstract class ScrollbackFragment extends Fragment {
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             Uri uri = Uri.parse(url);
 
-            if (uri.getAuthority().equals(Constants.ORIGIN)) {
+            if (uri.getAuthority().equals(origin)) {
                 // This is my web site, so do not override; let my WebView load the page
                 return false;
 
