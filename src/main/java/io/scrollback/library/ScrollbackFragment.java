@@ -53,7 +53,9 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static android.webkit.WebSettings.LOAD_DEFAULT;
 
@@ -87,6 +89,9 @@ public abstract class ScrollbackFragment extends Fragment {
 
     private Bridge bridge;
 
+    private Boolean isReady = false;
+    private List<JSONMessage> pendingMessages = new ArrayList<>();
+
     public static String origin = Constants.HOST;
     public static String index = Constants.PROTOCOL + "//" + origin;
     public static String home = index + Constants.PATH;
@@ -110,8 +115,12 @@ public abstract class ScrollbackFragment extends Fragment {
     }
 
     public void postMessage(JSONMessage message) {
-        if (bridge != null) {
-            bridge.postMessage(message);
+        if (isReady) {
+            if (bridge != null) {
+                bridge.postMessage(message);
+            }
+        } else {
+            pendingMessages.add(message);
         }
     }
 
@@ -124,7 +133,43 @@ public abstract class ScrollbackFragment extends Fragment {
 
         bridge = new Bridge(mWebView);
 
-        bridge.setOnMessageListener(messagehandler);
+        bridge.setOnMessageListener(new ScrollbackMessageHandler() {
+            @Override
+            public void onNavMessage(NavMessage message) {
+                if (messagehandler != null) {
+                    messagehandler.onNavMessage(message);
+                }
+            }
+
+            @Override
+            public void onAuthMessage(AuthStatus message) {
+                if (messagehandler != null) {
+                    messagehandler.onAuthMessage(message);
+                }
+            }
+
+            @Override
+            public void onFollowMessage(FollowMessage message) {
+                if (messagehandler != null) {
+                    messagehandler.onFollowMessage(message);
+                }
+            }
+
+            @Override
+            public void onReadyMessage(ReadyMessage message) {
+                isReady = true;
+
+                if (messagehandler != null) {
+                    messagehandler.onReadyMessage(message);
+                }
+
+                for (JSONMessage msg : pendingMessages) {
+                    if (msg != null && bridge != null) {
+                        bridge.postMessage(msg);
+                    }
+                }
+            }
+        });
 
         mProgressBar = (ProgressBar) v.findViewById(R.id.scrollback_pgbar);
         mLoadError = (TextView) v.findViewById(R.id.scrollback_loaderror);
