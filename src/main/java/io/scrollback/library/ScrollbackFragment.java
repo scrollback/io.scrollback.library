@@ -168,6 +168,8 @@ public abstract class ScrollbackFragment extends Fragment {
                         bridge.postMessage(msg);
                     }
                 }
+
+                hideLoading();
             }
         });
 
@@ -292,17 +294,6 @@ public abstract class ScrollbackFragment extends Fragment {
             @JavascriptInterface
             public void postMessage(String json) {
                 bridge.receiveMessage(json);
-            }
-
-            @SuppressWarnings("unused")
-            @JavascriptInterface
-            public void onFinishedLoading() {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        hideLoading();
-                    }
-                });
             }
 
             @SuppressWarnings("unused")
