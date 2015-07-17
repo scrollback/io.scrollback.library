@@ -15,7 +15,7 @@ public class Bridge {
 
     public void setOnMessageListener(MessageListener l) {
         listener = l;
-    };
+    }
 
     public void evaluateJavascript(final String script) {
         mWebView.post(new Runnable() {

@@ -35,7 +35,7 @@ public abstract class ScrollbackInterface {
     @SuppressWarnings("unused")
     @JavascriptInterface
     public void copyToClipboard(String label, String text) {
-        ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(mContext.CLIPBOARD_SERVICE);
+        ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText(label, text);
 
         clipboard.setPrimaryClip(clip);
