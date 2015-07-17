@@ -169,7 +169,12 @@ public abstract class ScrollbackFragment extends Fragment {
                     }
                 }
 
-                hideLoading();
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        hideLoading();
+                    }
+                });
             }
         });
 
