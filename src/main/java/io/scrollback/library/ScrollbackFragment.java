@@ -82,7 +82,7 @@ public abstract class ScrollbackFragment extends Fragment {
     }
 
     public void setEnableDebug(boolean debug) {
-        debugMode = true;
+        debugMode = debug;
     }
 
     public void setWidgetName(String name) {
@@ -160,17 +160,23 @@ public abstract class ScrollbackFragment extends Fragment {
         googleSetup = new GoogleSetup(getActivity()) {
             @Override
             public void onGCMRegister(String regid, String uuid, String model) {
-                emitGCMRegisterEvent(regid, uuid, model);
+                Log.d("GCMRegister", "uuid: " + uuid + " regid: " + regid);
+
+                bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('gcm_register', { detail :{'regId': '" + regid + "', 'uuid': '" + uuid + "', 'model': '" + model + "'} }))");
             }
 
             @Override
             public void onGCMUnRegister(String uuid) {
-                emitGCMUnregisterEvent(uuid);
+                Log.d("GCMUnRegister", "uuid: " + uuid);
+
+                bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('gcm_unregister', { detail :{'uuid': '" + uuid + "'} }))");
             }
 
             @Override
             public void onGoogleLogin(String token) {
-                emitGoogleLoginEvent(token);
+                Log.d("GoogleLogin", "token: " + token);
+
+                bridge.postMessage(new AuthRequest("{ provider: 'google', token: '" + token + "' }"));
             }
         };
 
@@ -302,13 +308,12 @@ public abstract class ScrollbackFragment extends Fragment {
                 // Get a handler that can be used to post to the main thread
                 Handler mainHandler = new Handler(getActivity().getMainLooper());
 
-                Runnable myRunnable = new Runnable() {
+                mainHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         doFacebookLogin();
                     }
-                };
-                mainHandler.post(myRunnable);
+                });
             }
 
             @SuppressWarnings("unused")
@@ -392,26 +397,10 @@ public abstract class ScrollbackFragment extends Fragment {
         mWebView.setVisibility(View.GONE);
     }
 
-    void emitGoogleLoginEvent(String token) {
-        Log.d("emitGoogleLoginEvent", "token: " + token);
-
-        bridge.postMessage(new AuthRequest("{ provider: 'google', token: '" + token + "' }"));
-    }
-
-    void emitFacebookLoginEvent(String token) {
-        Log.d("emitFacebookLoginEvent", "token: " + token);
+    void onFacebookLogin(String token) {
+        Log.d("FacebookLogin", "token: " + token);
 
         bridge.postMessage(new AuthRequest("{ provider: 'facebook', token: '" + token + "' }"));
-    }
-
-    void emitGCMRegisterEvent(String regid, String uuid, String model) {
-        Log.d("emitGCMRegisterEvent", "uuid: " + uuid + " regid: " + regid);
-
-        bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('gcm_register', { detail :{'regId': '" + regid + "', 'uuid': '" + uuid + "', 'model': '" + model + "'} }))");
-    }
-
-    void emitGCMUnregisterEvent(String uuid) {
-        bridge.evaluateJavascript("window.dispatchEvent(new CustomEvent('gcm_unregister', { detail :{'uuid': '" + uuid + "'} }))");
     }
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -474,10 +463,9 @@ public abstract class ScrollbackFragment extends Fragment {
                             @Override
                             public void onCompleted(JSONObject me, GraphResponse response) {
                                 if (response.getError() != null) {
-                                    // handle error
+                                    Toast.makeText(getActivity(), getString(R.string.signin_fail_error), Toast.LENGTH_SHORT).show();
                                 } else {
-                                    emitFacebookLoginEvent(loginResult.getAccessToken().getToken());
-                                    // send email and id to your web server
+                                    onFacebookLogin(loginResult.getAccessToken().getToken());
                                 }
                             }
                         }).executeAsync();
