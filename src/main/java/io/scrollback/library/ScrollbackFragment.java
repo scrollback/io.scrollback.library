@@ -59,9 +59,12 @@ public abstract class ScrollbackFragment extends Fragment {
     private final int REQUEST_SELECT_FILE = 19275;
 
     private boolean debugMode = false;
+    private boolean canChangeStatusBarColor = false;
+
     private String widgetName = "";
 
     private ScrollbackMessageHandler messagehandler;
+    private ScrollbackInterface sbInterface;
 
     private CallbackManager callbackManager;
 
@@ -83,6 +86,10 @@ public abstract class ScrollbackFragment extends Fragment {
 
     public void setEnableDebug(boolean debug) {
         debugMode = debug;
+    }
+
+    public void setCanChangeStatusBarColor(boolean status) {
+        canChangeStatusBarColor = status;
     }
 
     public void setWidgetName(String name) {
@@ -280,7 +287,7 @@ public abstract class ScrollbackFragment extends Fragment {
             mWebSettings.setDatabasePath(databasePath);
         }
 
-        mWebView.addJavascriptInterface(new ScrollbackInterface(getActivity()) {
+        sbInterface = new ScrollbackInterface(getActivity()) {
 
             @SuppressWarnings("unused")
             @JavascriptInterface
@@ -327,7 +334,11 @@ public abstract class ScrollbackFragment extends Fragment {
             public void unregisterGCM() {
                 googleSetup.unRegisterBackground();
             }
-        }, "Android");
+        };
+
+        sbInterface.setCanChangeStatusBarColor(canChangeStatusBarColor);
+
+        mWebView.addJavascriptInterface(sbInterface, "Android");
 
         mWebView.loadUrl(home);
 

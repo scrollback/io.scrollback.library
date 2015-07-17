@@ -13,11 +13,16 @@ import android.widget.Toast;
 
 
 public abstract class ScrollbackInterface {
+    private boolean canChangeStatusBarColor = false;
 
     Context mContext;
 
     ScrollbackInterface(Context c) {
         mContext = c;
+    }
+
+    public void setCanChangeStatusBarColor(boolean status) {
+        canChangeStatusBarColor = status;
     }
 
     @SuppressWarnings("unused")
@@ -73,9 +78,11 @@ public abstract class ScrollbackInterface {
         mContext.startActivity(Intent.createChooser(sharingIntent, title));
     }
 
-    @SuppressWarnings("unused")
-    @JavascriptInterface
-    public void setStatusBarColor() {
+    private void setStatusBarColor(final int color) {
+        if (canChangeStatusBarColor == false) {
+            return;
+        }
+
         final Activity activity = ((Activity) mContext);
 
         activity.runOnUiThread(new Runnable() {
@@ -83,9 +90,9 @@ public abstract class ScrollbackInterface {
             public void run() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     try {
-                        activity.getWindow().setStatusBarColor(mContext.getResources().getColor(R.color.primary_dark));
+                        activity.getWindow().setStatusBarColor(color);
                     } catch (Exception e) {
-                        Log.e(Constants.TAG, "Failed to set statusbar color " + e);
+                        Log.e(Constants.TAG, "Failed to set statusbar color to " + color + " " + e);
                     }
                 }
             }
@@ -95,20 +102,13 @@ public abstract class ScrollbackInterface {
     @SuppressWarnings("unused")
     @JavascriptInterface
     public void setStatusBarColor(final String color) {
-        final Activity activity = ((Activity) mContext);
+        setStatusBarColor(Color.parseColor(color));
+    }
 
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    try {
-                        activity.getWindow().setStatusBarColor(Color.parseColor(color));
-                    } catch (Exception e) {
-                        Log.e(Constants.TAG, "Failed to set statusbar color to " + color + " " + e);
-                    }
-                }
-            }
-        });
+    @SuppressWarnings("unused")
+    @JavascriptInterface
+    public void setStatusBarColor() {
+        setStatusBarColor(mContext.getResources().getColor(R.color.primary_dark));
     }
 
     public abstract void postMessage(String json);
