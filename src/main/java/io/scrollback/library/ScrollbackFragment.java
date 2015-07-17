@@ -3,20 +3,13 @@ package io.scrollback.library;
 import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -42,17 +35,10 @@ import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
-import com.google.android.gms.auth.GoogleAuthException;
-import com.google.android.gms.auth.GoogleAuthUtil;
-import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.android.gms.common.AccountPicker;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,18 +47,10 @@ import static android.webkit.WebSettings.LOAD_DEFAULT;
 
 public abstract class ScrollbackFragment extends Fragment {
     private String accountName;
-    private String accessToken;
-
-    GoogleCloudMessaging gcm;
-    String regid;
 
     private WebView mWebView;
     private ProgressBar mProgressBar;
     private TextView mLoadError;
-
-    private boolean inProgress = false;
-
-    ProgressDialog dialog;
 
     private ValueCallback<Uri> mUploadMessage;
     private ValueCallback<Uri[]> mUploadMessageArr;
@@ -87,6 +65,7 @@ public abstract class ScrollbackFragment extends Fragment {
 
     private CallbackManager callbackManager;
 
+    private GoogleSetup googleSetup;
     private Bridge bridge;
 
     private Boolean isReady = false;
@@ -178,6 +157,23 @@ public abstract class ScrollbackFragment extends Fragment {
             }
         });
 
+        googleSetup = new GoogleSetup(getActivity()) {
+            @Override
+            public void onGCMRegister(String regid, String uuid, String model) {
+                emitGCMRegisterEvent(regid, uuid, model);
+            }
+
+            @Override
+            public void onGCMUnRegister(String uuid) {
+                emitGCMUnregisterEvent(uuid);
+            }
+
+            @Override
+            public void onGoogleLogin(String token) {
+                emitGoogleLoginEvent(token);
+            }
+        };
+
         mProgressBar = (ProgressBar) v.findViewById(R.id.scrollback_pgbar);
         mLoadError = (TextView) v.findViewById(R.id.scrollback_loaderror);
 
@@ -186,15 +182,6 @@ public abstract class ScrollbackFragment extends Fragment {
             if (debugMode) {
                 WebView.setWebContentsDebuggingEnabled(true);
             }
-        }
-
-        // Check device for Play Services APK. If check succeeds, proceed with
-        // GCM registration.
-        if (checkPlayServices()) {
-            gcm = GoogleCloudMessaging.getInstance(getActivity());
-            regid = getRegistrationId(getActivity());
-        } else {
-            Log.e(Constants.TAG, "No valid Google Play Services APK found.");
         }
 
         mWebView.setWebViewClient(mWebViewClient);
@@ -327,14 +314,13 @@ public abstract class ScrollbackFragment extends Fragment {
             @SuppressWarnings("unused")
             @JavascriptInterface
             public void registerGCM() {
-                registerBackground();
+                googleSetup.registerBackground();
             }
 
             @SuppressWarnings("unused")
             @JavascriptInterface
             public void unregisterGCM() {
-                unRegisterBackground();
-
+                googleSetup.unRegisterBackground();
             }
         }, "Android");
 
@@ -538,305 +524,16 @@ public abstract class ScrollbackFragment extends Fragment {
         else if (requestCode == Constants.SOME_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
 
-            new RetrieveGoogleTokenTask().execute(accountName);
+            googleSetup.retriveGoogleToken(accountName);
         }
 
         else if (requestCode == Constants.REQ_SIGN_IN_REQUIRED && resultCode == Activity.RESULT_OK) {
             // We had to sign in - now we can finish off the token request.
-            new RetrieveGoogleTokenTask().execute(accountName);
+            googleSetup.retriveGoogleToken(accountName);
         }
 
         else {
             callbackManager.onActivityResult(requestCode, resultCode, data);
-
         }
-    }
-
-    private class RetrieveGoogleTokenTask extends AsyncTask<String, Void, String> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            dialog = new ProgressDialog(getActivity());
-            dialog.setMessage(getString(R.string.google_signing_in));
-            dialog.show();
-        }
-
-        @Override
-        protected String doInBackground(String... params) {
-            String accountName = params[0];
-            String scopes = "oauth2:profile email";
-            String token = null;
-
-            try {
-                token = GoogleAuthUtil.getToken(getActivity(), accountName, scopes);
-            } catch (IOException e) {
-                Log.e(Constants.TAG, e.getMessage());
-            } catch (UserRecoverableAuthException e) {
-                startActivityForResult(e.getIntent(), Constants.REQ_SIGN_IN_REQUIRED);
-            } catch (GoogleAuthException e) {
-                Log.e(Constants.TAG, e.getMessage());
-            }
-
-            return token;
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
-
-            if (dialog != null && dialog.isShowing()) {
-                dialog.dismiss();
-            }
-
-            if (s == null) {
-                Toast.makeText(getActivity(), getString(R.string.requesting_permission), Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(getActivity(), getString(R.string.signed_in), Toast.LENGTH_SHORT).show();
-
-                emitGoogleLoginEvent(s);
-
-                accessToken = s;
-            }
-        }
-    }
-
-    private class DeleteTokenTask extends AsyncTask<String, Void, String> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            inProgress = true;
-        }
-
-        @Override
-        protected String doInBackground(String... params) {
-            accessToken = params[0];
-
-            String result = null;
-
-            try {
-                GoogleAuthUtil.clearToken(getActivity(), accessToken);
-
-                result = "true";
-            } catch (GoogleAuthException e) {
-                Log.e(Constants.TAG, e.getMessage());
-            } catch (IOException e) {
-                Log.e(Constants.TAG, e.getMessage());
-            }
-
-            return result;
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
-
-            inProgress = false;
-
-        }
-    }
-
-    /**
-     * Registers the application with GCM servers asynchronously.
-     * <p/>
-     * Stores the registration id, app versionCode, and expiration time in the application's
-     * shared preferences.
-     */
-    private void registerBackground() {
-        new AsyncTask<Void, Void, String>() {
-
-            @Override
-            protected void onPreExecute() {
-                super.onPreExecute();
-            }
-
-            @Override
-            protected String doInBackground(Void... params) {
-                String msg;
-
-                try {
-                    if (gcm == null) {
-                        gcm = GoogleCloudMessaging.getInstance(getActivity());
-                    }
-
-                    regid = gcm.register(getString(R.string.gcm_sender_id));
-
-                    msg = "Device registered, registration id=" + regid;
-
-                    // You should send the registration ID to your server over HTTP, so it
-                    // can use GCM/HTTP or CCS to send messages to your app.
-
-                    // For this demo: we don't need to send it because the device will send
-                    // upstream messages to a server that echo back the message using the
-                    // 'from' address in the message.
-
-                    // Save the regid - no need to register again.
-                    setRegistrationId(getActivity(), regid);
-                } catch (IOException ex) {
-                    msg = "Error :" + ex.getMessage();
-                }
-
-                return msg;
-            }
-
-            @Override
-            protected void onPostExecute(String msg) {
-                if (dialog != null && dialog.isShowing()) {
-                    dialog.dismiss();
-                }
-
-                String uuid = Settings.Secure.getString(getActivity().getContentResolver(),
-                        Settings.Secure.ANDROID_ID);
-                emitGCMRegisterEvent(regid, uuid, Build.MODEL);
-            }
-        }.execute(null, null, null);
-    }
-
-
-    private void unRegisterBackground() {
-        new AsyncTask<Void, Void, String>() {
-
-            @Override
-            protected void onPreExecute() {
-                super.onPreExecute();
-            }
-
-            @Override
-            protected String doInBackground(Void... params) {
-                String msg = "";
-
-                try {
-                    if (gcm == null) {
-                        gcm = GoogleCloudMessaging.getInstance(getActivity());
-                    }
-
-                    gcm.unregister();
-
-                    // You should send the registration ID to your server over HTTP, so it
-                    // can use GCM/HTTP or CCS to send messages to your app.
-
-                    // For this demo: we don't need to send it because the device will send
-                    // upstream messages to a server that echo back the message using the
-                    // 'from' address in the message.
-
-                    // Save the regid - no need to register again.
-                    setRegistrationId(getActivity(), regid);
-                } catch (IOException ex) {
-                    msg = "Error :" + ex.getMessage();
-                }
-
-                return msg;
-            }
-
-            @Override
-            protected void onPostExecute(String msg) {
-                if (dialog != null && dialog.isShowing()) {
-                    dialog.dismiss();
-                }
-
-                emitGCMUnregisterEvent(Build.MODEL);
-            }
-        }.execute(null, null, null);
-    }
-
-
-
-    /**
-     * Stores the registration id, app versionCode, and expiration time in the application's
-     * {@code SharedPreferences}.
-     *
-     * @param context application's context.
-     * @param regId   registration id
-     */
-    private void setRegistrationId(Context context, String regId) {
-        final SharedPreferences prefs = getGCMPreferences();
-        int appVersion = getAppVersion(context);
-
-        Log.v(Constants.TAG, "Saving regId on app version " + appVersion);
-
-        SharedPreferences.Editor editor = prefs.edit();
-
-        editor.putString(Constants.PROPERTY_REG_ID, regId);
-        editor.putInt(Constants.PROPERTY_APP_VERSION, appVersion);
-        editor.apply();
-    }
-
-    /**
-     * Gets the current registration id for application on GCM service.
-     * <p/>
-     * If result is empty, the registration has failed.
-     *
-     * @return registration id, or empty string if the registration is not
-     * complete.
-     */
-    private String getRegistrationId(Context context) {
-        final SharedPreferences prefs = getGCMPreferences();
-        final String registrationId = prefs.getString(Constants.PROPERTY_REG_ID, "");
-
-        if (registrationId.length() == 0) {
-            Log.d(Constants.TAG, "Registration not found.");
-
-            return "";
-        }
-
-        // check if app was updated; if so, it must clear registration id to
-        // avoid a race condition if GCM sends a message
-        int registeredVersion = prefs.getInt(Constants.PROPERTY_APP_VERSION, Integer.MIN_VALUE);
-        int currentVersion = getAppVersion(context);
-
-        if (registeredVersion != currentVersion) {
-            Log.d(Constants.TAG, "App version changed or registration expired.");
-
-            return "";
-        }
-
-        return registrationId;
-    }
-
-    /**
-     * @return Application's version code from the {@code PackageManager}.
-     */
-    private static int getAppVersion(Context context) {
-        try {
-            PackageInfo packageInfo = context.getPackageManager()
-                    .getPackageInfo(context.getPackageName(), 0);
-
-            return packageInfo.versionCode;
-        } catch (PackageManager.NameNotFoundException e) {
-            // Should never happen
-            throw new RuntimeException("Could not get package name: " + e);
-        }
-    }
-
-    /**
-     * @return Application's {@code SharedPreferences}.
-     */
-    private SharedPreferences getGCMPreferences() {
-        return PreferenceManager.getDefaultSharedPreferences(getActivity());
-    }
-
-    /**
-     * Check the device to make sure it has the Google Play Services APK. If
-     * it doesn't, display a dialog that allows users to download the APK from
-     * the Google Play Store or enable it in the device's system settings.
-     */
-    private boolean checkPlayServices() {
-        int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(getActivity());
-
-        if (resultCode != ConnectionResult.SUCCESS) {
-            if (GooglePlayServicesUtil.isUserRecoverableError(resultCode)) {
-                GooglePlayServicesUtil.getErrorDialog(resultCode, getActivity(),
-                        Constants.PLAY_SERVICES_RESOLUTION_REQUEST).show();
-            } else {
-                Log.d(Constants.TAG, "This device is not supported.");
-
-            }
-
-            return false;
-        }
-
-        return true;
     }
 }
