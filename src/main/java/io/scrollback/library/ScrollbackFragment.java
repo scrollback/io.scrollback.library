@@ -393,6 +393,13 @@ public abstract class ScrollbackFragment extends Fragment {
         super.onDestroyView();
     }
 
+    public void navigateTo(Uri uri) {
+        mWebView.loadUrl(uri.toString());
+    }
+    public void navigateTo(String url) {
+        mWebView.loadUrl(index+url);
+    }
+
     void doFacebookLogin() {
         LoginManager.getInstance().logInWithReadPermissions(this, Arrays.asList("public_profile", "email"));
 
