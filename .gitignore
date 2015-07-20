@@ -25,3 +25,11 @@ proguard/
 
 # Log Files
 *.log
+<<<<<<< HEAD
+=======
+
+*.iml
+
+.idea
+.DS_Store
+>>>>>>> b0de5aa051c56bbea39f9a4e6800ca06952fa165
