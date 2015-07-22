@@ -424,15 +424,16 @@ public abstract class ScrollbackFragment extends Fragment {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             // Check if the key event was the Back button and if there's history
-            if (mWebView.getUrl().equals(home) || !mWebView.canGoBack()) {
-                return getActivity().onKeyDown(keyCode, event);
-            } else if (mWebView.canGoBack()) {
+            if (!mWebView.getUrl().equals(home) && mWebView.canGoBack()) {
                 mWebView.goBack();
+
+                return true;
             }
 
-            return true;
+            return false;
         }
-        return getActivity().onKeyDown(keyCode, event);
+
+        return false;
     }
 
     private WebViewClient mWebViewClient = new WebViewClient() {
