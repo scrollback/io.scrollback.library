@@ -7,6 +7,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
+import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -469,6 +471,13 @@ public abstract class ScrollbackFragment extends Fragment {
         public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
             mLoadError.setVisibility(View.VISIBLE);
             mProgressBar.setVisibility(View.GONE);
+        }
+
+        @Override
+        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            if (debugMode) {
+                handler.proceed();
+            }
         }
     };
 
