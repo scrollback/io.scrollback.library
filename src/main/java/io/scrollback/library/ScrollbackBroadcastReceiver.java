@@ -13,10 +13,14 @@ public class ScrollbackBroadcastReceiver extends WakefulBroadcastReceiver {
 
     String intentServiceName = null;
 
+    public ScrollbackBroadcastReceiver(String serviceName) {
+        intentServiceName = serviceName;
+    }
+
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intentServiceName == null) {
-            Log.e("scrollbacklib", "ScrollbackIntentService not implemented or IntentService name not set");
+            Log.e(Constants.TAG, "ScrollbackIntentService not implemented or IntentService name not set");
 
             return;
         }
@@ -27,9 +31,5 @@ public class ScrollbackBroadcastReceiver extends WakefulBroadcastReceiver {
         // Start the service, keeping the device awake while it is launching.
         startWakefulService(context, (intent.setComponent(comp)));
         setResultCode(Activity.RESULT_OK);
-    }
-
-    public void setIntentServiceName(String intentServiceName) {
-        this.intentServiceName=intentServiceName;
     }
 }

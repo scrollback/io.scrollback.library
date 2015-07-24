@@ -1,8 +1,5 @@
 package io.scrollback.library;
 
-/**
- * Created by karthikbalakrishnan on 20/07/15.
- */
 import android.app.IntentService;
 import android.content.Intent;
 import android.os.Bundle;
@@ -14,13 +11,14 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 public abstract class ScrollbackIntentService extends IntentService {
 
     public ScrollbackIntentService() {
-        super("GcmIntentService");
+        super("ScrollbackIntentService");
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
         Bundle extras = intent.getExtras();
         GoogleCloudMessaging gcm = GoogleCloudMessaging.getInstance(this);
+
         // The getMessageType() intent parameter must be the intent you received
         // in your BroadcastReceiver.
         String messageType = gcm.getMessageType(intent);
@@ -34,27 +32,31 @@ public abstract class ScrollbackIntentService extends IntentService {
              */
             if (GoogleCloudMessaging.
                     MESSAGE_TYPE_SEND_ERROR.equals(messageType)) {
-                Log.i("GCM Error", "Send error: " + extras.toString());
+                Log.e(Constants.TAG, "GCM send error: " + extras.toString());
             } else if (GoogleCloudMessaging.
                     MESSAGE_TYPE_DELETED.equals(messageType)) {
-                Log.i("GCM Error", "Deleted messages on server: " +
+                Log.e(Constants.TAG, "GCM messages deleted on server: " +
                         extras.toString());
                 // If it's a regular GCM message, do some work.
             } else if (GoogleCloudMessaging.
                     MESSAGE_TYPE_MESSAGE.equals(messageType)) {
 
-                Log.d("gcm_payload", extras.toString());
+                Log.d(Constants.TAG, "gcm_payload: " + extras.toString());
 
-                Log.d("gcm_title", extras.getString("title", "Scrollback"));
-                Log.d("gcm_subtitle", extras.getString("text", "There is new activity"));
-                Log.d("gcm_path", extras.getString("path", "me"));
+                Log.d(Constants.TAG, "gcm_title: " + extras.getString("title"));
+                Log.d(Constants.TAG, "gcm_subtitle: " + extras.getString("text"));
+                Log.d(Constants.TAG, "gcm_path: " + extras.getString("path"));
 
                 Notification notif = new Notification();
+
                 notif.setTitle(extras.getString("title", "Scrollback"));
                 notif.setText(extras.getString("text", "There is new activity"));
-                notif.setPath("/"+extras.getString("path", "me"));
+                notif.setPath(extras.getString("path", "/me"));
+
+                sendNotification(notif);
             }
         }
+
         // Release the wake lock provided by the WakefulBroadcastReceiver.
         ScrollbackBroadcastReceiver.completeWakefulIntent(intent);
     }
