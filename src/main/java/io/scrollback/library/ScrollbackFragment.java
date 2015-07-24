@@ -76,6 +76,8 @@ public abstract class ScrollbackFragment extends Fragment {
     private Boolean isReady = false;
     private List<JSONMessage> pendingMessages = new ArrayList<>();
 
+    private String initialUrl;
+
     public static String origin = Constants.HOST;
     public static String index = Constants.PROTOCOL + "//" + origin;
     public static String home = index + Constants.PATH;
@@ -110,6 +112,18 @@ public abstract class ScrollbackFragment extends Fragment {
         } else {
             pendingMessages.add(message);
         }
+    }
+
+    public void loadUrl(String url) {
+        if (mWebView != null) {
+            mWebView.loadUrl(url);
+        } else {
+            initialUrl = url;
+        }
+    }
+
+    public void loadPath(String path) {
+        loadUrl(index + path);
     }
 
     @Override
@@ -342,7 +356,11 @@ public abstract class ScrollbackFragment extends Fragment {
 
         mWebView.addJavascriptInterface(sbInterface, "Android");
 
-        mWebView.loadUrl(home);
+        if (initialUrl != null) {
+            mWebView.loadUrl(initialUrl);
+        } else {
+            mWebView.loadUrl(home);
+        }
 
         mLoadError.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -392,14 +410,8 @@ public abstract class ScrollbackFragment extends Fragment {
     @Override
     public void onDestroyView() {
         mWebView.destroy();
-        super.onDestroyView();
-    }
 
-    public void navigateTo(Uri uri) {
-        mWebView.loadUrl(uri.toString());
-    }
-    public void navigateTo(String url) {
-        mWebView.loadUrl(index+url);
+        super.onDestroyView();
     }
 
     void doFacebookLogin() {
