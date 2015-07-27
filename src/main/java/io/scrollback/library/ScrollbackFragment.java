@@ -114,9 +114,14 @@ public abstract class ScrollbackFragment extends Fragment {
         }
     }
 
-    public void loadUrl(String url) {
+    public void loadUrl(final String url) {
         if (mWebView != null) {
-            mWebView.loadUrl(url);
+            mWebView.post(new Runnable() {
+                @Override
+                public void run() {
+                    mWebView.loadUrl(url);
+                }
+            });
         } else {
             initialUrl = url;
         }
