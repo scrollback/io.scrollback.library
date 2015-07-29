@@ -14,11 +14,12 @@
         android:layout_height="fill_parent"
         android:visibility="gone" />
 
-    <ProgressBar
+    <pl.droidsonroids.gif.GifImageView
         android:id="@+id/scrollback_pgbar"
         android:layout_centerInParent="true"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:src="@drawable/loading" />
 
     <WebView
         android:id="@+id/scrollback_webview"

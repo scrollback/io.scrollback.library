@@ -25,7 +25,6 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,13 +44,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import pl.droidsonroids.gif.GifImageView;
+
 import static android.webkit.WebSettings.LOAD_DEFAULT;
 
 public abstract class ScrollbackFragment extends Fragment {
     private String accountName;
 
     private WebView mWebView;
-    private ProgressBar mProgressBar;
+    private GifImageView mLoading;
     private TextView mLoadError;
 
     private ValueCallback<Uri> mUploadMessage;
@@ -241,7 +242,7 @@ public abstract class ScrollbackFragment extends Fragment {
             }
         };
 
-        mProgressBar = (ProgressBar) v.findViewById(R.id.scrollback_pgbar);
+        mLoading = (GifImageView) v.findViewById(R.id.scrollback_pgbar);
         mLoadError = (TextView) v.findViewById(R.id.scrollback_loaderror);
 
         // Enable debugging in webview
@@ -458,12 +459,12 @@ public abstract class ScrollbackFragment extends Fragment {
     }
 
     void hideLoading() {
-        mProgressBar.setVisibility(View.GONE);
+        mLoading.setVisibility(View.GONE);
         mWebView.setVisibility(View.VISIBLE);
     }
 
     void showLoading() {
-        mProgressBar.setVisibility(View.VISIBLE);
+        mLoading.setVisibility(View.VISIBLE);
         mWebView.setVisibility(View.GONE);
     }
 
@@ -520,7 +521,7 @@ public abstract class ScrollbackFragment extends Fragment {
         @Override
         public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
             mLoadError.setVisibility(View.VISIBLE);
-            mProgressBar.setVisibility(View.GONE);
+            mLoading.setVisibility(View.GONE);
         }
 
         @Override
