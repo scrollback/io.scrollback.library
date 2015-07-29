@@ -61,6 +61,8 @@ public abstract class ScrollbackFragment extends Fragment {
     private final int REQUEST_SELECT_FILE_LEGACY = 19264;
     private final int REQUEST_SELECT_FILE = 19275;
 
+    private final int LOADING_DELAY_LENGTH = 1000;
+
     private boolean debugMode = false;
     private boolean canChangeStatusBarColor = false;
 
@@ -210,12 +212,17 @@ public abstract class ScrollbackFragment extends Fragment {
                     }
                 }
 
-                getActivity().runOnUiThread(new Runnable() {
+                new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        hideLoading();
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                hideLoading();
+                            }
+                        });
                     }
-                });
+                }, LOADING_DELAY_LENGTH);
             }
         });
 
