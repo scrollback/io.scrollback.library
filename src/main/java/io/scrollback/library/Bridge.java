@@ -51,4 +51,17 @@ public class Bridge {
             listener.onMessage(message);
         }
     }
+
+    public void setStyleSheet(final String sheet) {
+        evaluateJavascript("" +
+        "(function() {" +
+        "    var style = document.getElementById('app-custom-style');" +
+        "    if (!style) {" +
+        "        style = document.createElement('style');" +
+        "        document.head.appendChild(style);" +
+        "    }" +
+        "    style.textContent = '" + sheet.replace("'", "\\'") + "';" +
+        "}())" +
+        "");
+    }
 }

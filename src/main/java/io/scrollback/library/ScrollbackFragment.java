@@ -78,6 +78,25 @@ public abstract class ScrollbackFragment extends Fragment {
 
     private String initialUrl;
 
+    private final String primaryStyle = "" +
+            ".button, [type=button], [type=submit], button { background-color: #3ca; }" +
+            ".appbar-primary { background-color: #3ca; }" +
+            "::selection { background-color: #3ca; }" +
+            "::-moz-selection { background-color: #3ca; }" +
+            ".card-quick-reply.active .card-entry-reply { box-shadow: inset 0 0 0 1px #3ca; }" +
+            ".chat-item-tag-action { border-right-color: #3ca; }" +
+            ".multientry-segment { background-color: #3ca; }" +
+            ".chat-area-input-entry:active, .chat-area-input-entry:focus, .chat-area-input-entry:hover," +
+            ".multientry:active, .multientry:focus, .multientry:hover," +
+            ".textarea-container:active, .textarea-container:focus, .textarea-container:hover," +
+            ".entry:active, .entry:focus, .entry:hover," +
+            "input:active, input:focus, input:hover, textarea:active, textarea:focus, textarea:hover { border-color: #3ca; }" +
+            ".thread-color { background-color: #3ca; }" +
+            ".thread-color-dark { background-color: #238b74; }" +
+            ".sidebar-right .searchbar { background-color: #3ca; }";
+
+    private String customPrimaryStyle;
+
     public static String origin = Constants.HOST;
     public static String index = Constants.PROTOCOL + "//" + origin;
     public static String home = index + Constants.PATH;
@@ -86,6 +105,16 @@ public abstract class ScrollbackFragment extends Fragment {
         origin = host;
         index = protocol + "//" + origin;
         home = index + path;
+    }
+
+    public void setPrimaryColor(int primary, int primaryDark) {
+        customPrimaryStyle = primaryStyle
+                                .replace("#3ca", "#" + Integer.toHexString(primary).substring(2))
+                                .replace("#238b74", "#" + Integer.toHexString(primaryDark).substring(2));
+
+        if (bridge != null) {
+            bridge.setStyleSheet(customPrimaryStyle);
+        }
     }
 
     public void setEnableDebug(boolean debug) {
@@ -139,6 +168,10 @@ public abstract class ScrollbackFragment extends Fragment {
         mWebView = (WebView) v.findViewById(R.id.scrollback_webview);
 
         bridge = new Bridge(mWebView);
+
+        if (customPrimaryStyle != null) {
+            bridge.setStyleSheet(customPrimaryStyle);
+        }
 
         bridge.setOnMessageListener(new ScrollbackMessageHandler() {
             @Override
@@ -494,6 +527,15 @@ public abstract class ScrollbackFragment extends Fragment {
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             if (debugMode) {
                 handler.proceed();
+            }
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+
+            if (customPrimaryStyle != null) {
+                bridge.setStyleSheet(customPrimaryStyle);
             }
         }
     };
