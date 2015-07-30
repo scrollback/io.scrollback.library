@@ -76,6 +76,8 @@ public abstract class ScrollbackFragment extends Fragment {
     private GoogleSetup googleSetup;
     private Bridge bridge;
 
+    private String gcmSenderId;
+
     private Boolean isReady = false;
     private List<JSONMessage> pendingMessages = new ArrayList<>();
 
@@ -163,6 +165,14 @@ public abstract class ScrollbackFragment extends Fragment {
         loadUrl(index + path);
     }
 
+    public void setGcmSenderId(String senderId) {
+        if (googleSetup == null) {
+            gcmSenderId = senderId;
+        } else {
+            googleSetup.setSenderId(senderId);
+        }
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
@@ -248,6 +258,10 @@ public abstract class ScrollbackFragment extends Fragment {
                 bridge.postMessage(new AuthRequest("{ provider: 'google', token: '" + token + "' }"));
             }
         };
+
+        if (gcmSenderId != null) {
+            googleSetup.setSenderId(gcmSenderId);
+        }
 
         mLoading = (GifImageView) v.findViewById(R.id.scrollback_pgbar);
         mLoadError = (TextView) v.findViewById(R.id.scrollback_loaderror);

@@ -29,6 +29,7 @@ public abstract class GoogleSetup {
     private GoogleCloudMessaging gcm;
     private ProgressDialog dialog;
 
+    private String senderId;
     private String accessToken;
 
     GoogleSetup(Context c) {
@@ -49,6 +50,10 @@ public abstract class GoogleSetup {
     public abstract void onGCMUnRegister(String regid);
 
     public abstract void onGoogleLogin(String token);
+
+    public void setSenderId(String gcmSenderId) {
+        senderId = gcmSenderId;
+    }
 
     /**
      * Check the device to make sure it has the Google Play Services APK. If
@@ -155,8 +160,11 @@ public abstract class GoogleSetup {
      * shared preferences.
      */
     protected void registerBackground() {
-        new AsyncTask<Void, Void, String>() {
+        if (senderId == null) {
+            return;
+        }
 
+        new AsyncTask<Void, Void, String>() {
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
@@ -171,7 +179,7 @@ public abstract class GoogleSetup {
                         gcm = GoogleCloudMessaging.getInstance(mContext);
                     }
 
-                    regid = gcm.register(mContext.getString(R.string.gcm_sender_id));
+                    regid = gcm.register(senderId);
 
                     msg = "Device registered, registration id=" + regid;
 

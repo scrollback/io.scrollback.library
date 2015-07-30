@@ -13,8 +13,4 @@
     <string name="signin_cancel_error">Sign in canceled!</string>
     <string name="signin_fail_error">Sign in failed!</string>
     <string name="load_fail_error">Failed to load Scrollback :-(\nTap to retry.</string>
-
-    <string name="fb_app_id">1389363534614084</string>
-    <string name="gcm_sender_id">73969137499</string>
-
 </resources>
