@@ -12,5 +12,6 @@
     <string name="file_chooser_error">Cannot open file chooser :-(</string>
     <string name="signin_cancel_error">Sign in canceled!</string>
     <string name="signin_fail_error">Sign in failed!</string>
+    <string name="loading_text">Hang on a moment…</string>
     <string name="load_fail_error">Failed to load Scrollback :-(\nTap to retry.</string>
 </resources>

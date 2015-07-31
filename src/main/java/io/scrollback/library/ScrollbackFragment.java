@@ -25,6 +25,8 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,7 +54,7 @@ public abstract class ScrollbackFragment extends Fragment {
     private String accountName;
 
     private WebView mWebView;
-    private GifImageView mLoading;
+    private LinearLayout mLoading;
     private TextView mLoadError;
 
     private ValueCallback<Uri> mUploadMessage;
@@ -263,7 +265,7 @@ public abstract class ScrollbackFragment extends Fragment {
             googleSetup.setSenderId(gcmSenderId);
         }
 
-        mLoading = (GifImageView) v.findViewById(R.id.scrollback_pgbar);
+        mLoading = (LinearLayout) v.findViewById(R.id.loading_screen);
         mLoadError = (TextView) v.findViewById(R.id.scrollback_loaderror);
 
         // Enable debugging in webview
