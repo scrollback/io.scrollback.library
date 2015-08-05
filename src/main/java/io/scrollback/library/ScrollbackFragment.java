@@ -26,7 +26,6 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,7 +45,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import pl.droidsonroids.gif.GifImageView;
 
 import static android.webkit.WebSettings.LOAD_DEFAULT;
 
@@ -471,9 +469,18 @@ public abstract class ScrollbackFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        mWebView.destroy();
+        if (mWebView != null) {
+            mWebView.loadUrl("about:blank");
+            mWebView.destroy();
+            mWebView = null;
+        }
 
         super.onDestroyView();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
     }
 
     void doFacebookLogin() {
