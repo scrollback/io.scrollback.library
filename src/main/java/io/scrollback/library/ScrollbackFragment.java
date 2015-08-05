@@ -85,6 +85,9 @@ public abstract class ScrollbackFragment extends Fragment {
 
     private final String primaryStyle = "" +
             ".button, [type=button], [type=submit], button { background-color: #3ca; }" +
+            ".button:focus, [type=button]:focus, [type=submit]:focus, button:focus," +
+            ".button:hover, [type=button]:hover, [type=submit]:hover, button:hover," +
+            ".button:active, [type=button]:active, [type=submit]:active, button:active { background-color: #238b74; }" +
             ".appbar-primary { background-color: #3ca; }" +
             "::selection { background-color: #3ca; }" +
             "::-moz-selection { background-color: #3ca; }" +
