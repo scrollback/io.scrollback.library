@@ -7,7 +7,7 @@ import org.json.JSONObject;
 
 public class FollowMessage extends JSONMessage {
     public String room;
-    public boolean value;
+    public String role;
 
     @Override
     protected void init(JSONObject message) {
@@ -15,7 +15,7 @@ public class FollowMessage extends JSONMessage {
 
         try {
             room = json.getString("room");
-            value = json.getBoolean("value");
+            role = json.getString("role");
         } catch (JSONException e) {
             Log.e(Constants.TAG, "Error parsing follow message " + e);
         }
