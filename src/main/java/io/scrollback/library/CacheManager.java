@@ -79,14 +79,14 @@ public class CacheManager {
         isUnsafe = value;
 
         if (isUnsafe == true) {
-            Log.d(TAG, "Unsafe mode, SSL errors will be ignored.");
+            Log.d(TAG, "Unsafe mode, SSL errors will be ignored");
         }
 
         return this;
     }
 
     private String readFileAsText(File file) {
-        Log.d(TAG, "Reading file as text " + file.getAbsolutePath());
+        Log.d(TAG, "Reading file " + file.getAbsolutePath());
 
         StringBuilder text = new StringBuilder();
 
@@ -204,17 +204,23 @@ public class CacheManager {
                 .url(hostUrl + path)
                 .build();
 
-        Response response = client.newCall(request).execute();
+        try {
+            Response response = client.newCall(request).execute();
 
-        File file = new File(dir, path);
+            File file = new File(dir, path);
 
-        file.getParentFile().mkdirs();
-        file.createNewFile();
+            file.getParentFile().mkdirs();
+            file.createNewFile();
 
-        BufferedSink sink = Okio.buffer(Okio.sink(file));
+            BufferedSink sink = Okio.buffer(Okio.sink(file));
 
-        sink.writeAll(response.body().source());
-        sink.close();
+            sink.writeAll(response.body().source());
+            sink.close();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to download file " + hostUrl + path);
+
+            throw e;
+        }
     }
 
     private void emptyDir(File dir) {
@@ -279,29 +285,28 @@ public class CacheManager {
         return fileList;
     }
 
-    private void refreshCache() {
+    private void cleanUp() {
+        Log.d(TAG, "Cleaning up temporary files");
+
+        tempDir.delete();
+    }
+
+    private void refreshCache() throws IOException {
         Log.d(TAG, "Refreshing cache");
 
         tempDir = new File(cacheDir.getParentFile(), "tmp");
 
         emptyDir(tempDir);
 
-        try {
-            downloadFile(manifestPath, tempDir);
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to download cache manifest " + manifestPath, e);
-            Log.e(TAG, "Aborting refresh.");
-
-            return;
-        }
+        downloadFile(manifestPath, tempDir);
 
         String manifestTemp = readFileAsText(new File(tempDir.getAbsolutePath(), manifestPath));
         String manifestCached = readFileAsText(new File(cacheDir.getAbsolutePath(), manifestPath));
 
         if (manifestTemp != null && manifestCached != null && manifestTemp.equals(manifestCached)) {
-            Log.d(TAG, "Cache manifest has not changed.");
+            Log.d(TAG, "Cache manifest has not changed");
 
-//            return;
+            return;
         }
 
         File cacheManifest = new File(tempDir.getAbsolutePath(), manifestPath);
@@ -309,18 +314,10 @@ public class CacheManager {
         List<String> fileList = listFiles(cacheManifest);
 
         for (String file : fileList) {
-            try {
-                downloadFile(file, tempDir);
+            downloadFile(file, tempDir);
 
-                if (!new File(tempDir, file).exists()) {
-                    throw new IOException("File doesn't exist");
-                }
-            } catch (IOException e) {
-                // Cache download failed
-                Log.e(TAG, "Failed to download file " + file, e);
-                Log.e(TAG, "Aborting refresh.");
-
-                return;
+            if (!new File(tempDir, file).exists()) {
+                throw new IOException("File doesn't exist");
             }
         }
 
@@ -329,8 +326,14 @@ public class CacheManager {
         try {
             copyFiles(tempDir, cacheDir);
         } catch (IOException e) {
-            Log.e(TAG, "Failed to copy files from " + tempDir.getAbsolutePath() + " to " + cacheDir.getAbsolutePath(), e);
+            Log.e(TAG, "Failed to copy files from " + tempDir.getAbsolutePath() + " to " + cacheDir.getAbsolutePath());
+
+            emptyDir(cacheDir);
+
+            throw e;
         }
+
+        cleanUp();
     }
 
     private void executeSync() {
@@ -354,7 +357,13 @@ public class CacheManager {
         }
 
         // Refresh the cache
-        refreshCache();
+        try {
+            refreshCache();
+        } catch (IOException e) {
+            Log.e(TAG, "Aborting refresh", e);
+
+            cleanUp();
+        }
     }
 
     public void execute() {
