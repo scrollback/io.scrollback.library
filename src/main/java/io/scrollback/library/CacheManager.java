@@ -19,6 +19,8 @@ import java.io.OutputStream;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -32,7 +34,7 @@ import okio.Okio;
 
 public class CacheManager {
     private String hostUrl;
-    private String manifestPath;
+    private String indexPath;
     private File cacheDir;
     private File fallbackDir;
     private File tempDir;
@@ -43,16 +45,20 @@ public class CacheManager {
 
     public CacheManager load(String url, String path) {
         if (path == null) {
-            manifestPath = "/manifest.appcache";
+            indexPath = "/index.html";
         } else {
-            manifestPath = path;
-        }
+            indexPath = path;
 
-        Log.d(TAG, "Manifest file path set to " + manifestPath);
+            Log.d(TAG, "Index file path set to " + indexPath);
+        }
 
         hostUrl = url;
 
         return this;
+    }
+
+    public CacheManager load(String url) {
+        return load(url, null);
     }
 
     public CacheManager directory(String path) {
@@ -235,7 +241,7 @@ public class CacheManager {
         }
     }
 
-    private List<String> listFiles(File cacheManifest) {
+    private List<String> listFiles(File cacheManifest) throws IOException {
         List<String> fileList = new ArrayList<>();
 
         Boolean isCacheSection = false;
@@ -277,9 +283,9 @@ public class CacheManager {
             br.close();
         } catch (IOException e) {
             // Failed to read manifest file
-            Log.e(TAG, "Failed to read cache manifest " + manifestPath, e);
+            Log.e(TAG, "Failed to read cache manifest " + cacheManifest.getAbsolutePath());
 
-            return null;
+            throw e;
         }
 
         return fileList;
@@ -297,6 +303,51 @@ public class CacheManager {
         tempDir = new File(cacheDir.getParentFile(), "tmp");
 
         emptyDir(tempDir);
+
+        downloadFile(indexPath, tempDir);
+
+        File indexFile = new File(tempDir, indexPath);
+
+        String manifestPath = null;
+
+        try {
+            Log.d(TAG, "Reading index file " + indexFile.getAbsolutePath());
+
+            BufferedReader br = new BufferedReader(new FileReader(indexFile));
+
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                Pattern pattern = Pattern.compile("(manifest=['\"])([^'^\"]+)(['\"])");
+
+                Matcher matcher = pattern.matcher(line);
+
+                if (matcher.find()) {
+                    manifestPath = matcher.group(2);
+
+                    if (!manifestPath.matches("^/.+$")) {
+                        manifestPath = "/" + manifestPath;
+                    }
+
+                    Log.d(TAG, "Found manifest file path " + manifestPath);
+
+                    break;
+                }
+            }
+
+            br.close();
+        } catch (IOException e) {
+            // Failed to read manifest file
+            Log.e(TAG, "Failed to read index file " + indexFile.getAbsolutePath());
+
+            throw e;
+        }
+
+        if (manifestPath == null) {
+            Log.e(TAG, "Couldn't find manifest file path from index");
+
+            throw new IOException();
+        }
 
         downloadFile(manifestPath, tempDir);
 
@@ -317,7 +368,7 @@ public class CacheManager {
             downloadFile(file, tempDir);
 
             if (!new File(tempDir, file).exists()) {
-                throw new IOException("File doesn't exist");
+                throw new IOException();
             }
         }
 
