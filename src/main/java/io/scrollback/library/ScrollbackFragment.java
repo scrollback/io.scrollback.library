@@ -424,7 +424,7 @@ public abstract class ScrollbackFragment extends Fragment {
         new CacheManager()
                 .unsafe(debugMode)
                 .load(index)
-                .directory(getActivity().getCacheDir().getAbsolutePath() + "/www")
+                .cache(getActivity().getCacheDir())
                 .execute();
 
         if (initialUrl != null) {

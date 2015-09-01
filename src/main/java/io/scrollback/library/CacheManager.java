@@ -35,9 +35,10 @@ import okio.Okio;
 public class CacheManager {
     private String hostUrl;
     private String indexPath;
-    private File cacheDir;
     private File fallbackDir;
-    private File tempDir;
+    private File cacheDir;
+    private File wwwDir;
+    private File tmpDir;
 
     private boolean isUnsafe;
 
@@ -61,16 +62,21 @@ public class CacheManager {
         return load(url, null);
     }
 
-    public CacheManager directory(String path) {
-        cacheDir = new File(path);
+    public CacheManager cache(File path) {
+        cacheDir = new File(path, "CacheManager");
+
+        cacheDir.mkdirs();
+
+        wwwDir = new File(cacheDir, "www");
+        tmpDir = new File(cacheDir, "tmp");
 
         Log.d(TAG, "Cache directory set to " + path);
 
         return this;
     }
 
-    public CacheManager fallback(String path) throws FileNotFoundException {
-        fallbackDir = new File(path);
+    public CacheManager fallback(File path) throws FileNotFoundException {
+        fallbackDir = path;
 
         if (!fallbackDir.exists()) {
             throw new FileNotFoundException("The directory " + path + " doesn't exist.");
@@ -294,19 +300,17 @@ public class CacheManager {
     private void cleanUp() {
         Log.d(TAG, "Cleaning up temporary files");
 
-        tempDir.delete();
+        tmpDir.delete();
     }
 
     private void refreshCache() throws IOException {
         Log.d(TAG, "Refreshing cache");
 
-        tempDir = new File(cacheDir.getParentFile(), "tmp");
+        emptyDir(tmpDir);
 
-        emptyDir(tempDir);
+        downloadFile(indexPath, tmpDir);
 
-        downloadFile(indexPath, tempDir);
-
-        File indexFile = new File(tempDir, indexPath);
+        File indexFile = new File(tmpDir, indexPath);
 
         String manifestPath = null;
 
@@ -349,37 +353,37 @@ public class CacheManager {
             throw new IOException();
         }
 
-        downloadFile(manifestPath, tempDir);
+        downloadFile(manifestPath, tmpDir);
 
-        String manifestTemp = readFileAsText(new File(tempDir.getAbsolutePath(), manifestPath));
-        String manifestCached = readFileAsText(new File(cacheDir.getAbsolutePath(), manifestPath));
+        String manifesttmp = readFileAsText(new File(tmpDir.getAbsolutePath(), manifestPath));
+        String manifestCached = readFileAsText(new File(wwwDir.getAbsolutePath(), manifestPath));
 
-        if (manifestTemp != null && manifestCached != null && manifestTemp.equals(manifestCached)) {
+        if (manifesttmp != null && manifestCached != null && manifesttmp.equals(manifestCached)) {
             Log.d(TAG, "Cache manifest has not changed");
 
             return;
         }
 
-        File cacheManifest = new File(tempDir.getAbsolutePath(), manifestPath);
+        File cacheManifest = new File(tmpDir.getAbsolutePath(), manifestPath);
 
         List<String> fileList = listFiles(cacheManifest);
 
         for (String file : fileList) {
-            downloadFile(file, tempDir);
+            downloadFile(file, tmpDir);
 
-            if (!new File(tempDir, file).exists()) {
+            if (!new File(tmpDir, file).exists()) {
                 throw new IOException();
             }
         }
 
-        emptyDir(cacheDir);
+        emptyDir(wwwDir);
 
         try {
-            copyFiles(tempDir, cacheDir);
+            copyFiles(tmpDir, wwwDir);
         } catch (IOException e) {
-            Log.e(TAG, "Failed to copy files from " + tempDir.getAbsolutePath() + " to " + cacheDir.getAbsolutePath());
+            Log.e(TAG, "Failed to copy files from " + tmpDir.getAbsolutePath() + " to " + wwwDir.getAbsolutePath());
 
-            emptyDir(cacheDir);
+            emptyDir(wwwDir);
 
             throw e;
         }
@@ -390,20 +394,20 @@ public class CacheManager {
     private void executeSync() {
         if (fallbackDir != null && fallbackDir.exists()) {
             try {
-                if (cacheDir.exists()) {
-                    File[] contents = cacheDir.listFiles();
+                if (wwwDir.exists()) {
+                    File[] contents = wwwDir.listFiles();
 
                     if (contents == null || contents.length == 0) {
                         Log.d(TAG, "Cache directory is empty");
 
-                        copyFiles(fallbackDir, cacheDir);
+                        copyFiles(fallbackDir, wwwDir);
                     }
                 } else {
-                    copyFiles(fallbackDir, cacheDir);
+                    copyFiles(fallbackDir, wwwDir);
                 }
             } catch (IOException e) {
                 // Failed to read manifest file
-                Log.e(TAG, "Failed to copy files from " + fallbackDir.getAbsolutePath() + " to " + cacheDir.getAbsolutePath(), e);
+                Log.e(TAG, "Failed to copy files from " + fallbackDir.getAbsolutePath() + " to " + wwwDir.getAbsolutePath(), e);
             }
         }
 
