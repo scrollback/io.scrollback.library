@@ -42,6 +42,7 @@ import com.google.android.gms.common.AccountPicker;
 
 import org.json.JSONObject;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -419,6 +420,12 @@ public abstract class ScrollbackFragment extends Fragment {
         sbInterface.setCanChangeStatusBarColor(canChangeStatusBarColor);
 
         mWebView.addJavascriptInterface(sbInterface, "Android");
+
+        new CacheManager()
+                .unsafe(debugMode)
+                .load(index, "/manifest.appcache")
+                .directory(getActivity().getCacheDir().getAbsolutePath() + "/www")
+                .execute();
 
         if (initialUrl != null) {
             mWebView.loadUrl(initialUrl);

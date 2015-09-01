@@ -20,4 +20,6 @@ dependencies {
     compile 'com.google.android.gms:play-services:7.5.0'
     compile 'com.facebook.android:facebook-android-sdk:4.1.0'
     compile 'pl.droidsonroids.gif:android-gif-drawable:1.1.+'
+    compile 'com.squareup.okhttp:okhttp:2.5.0'
+    compile 'com.squareup.okio:okio:1.6.0'
 }
