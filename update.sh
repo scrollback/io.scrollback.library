@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SERVER="http://scrollback.io"
-WWW="www"
+WWW="src/main/assets/www"
 
 if [[ $1 ]]; then
     SERVER="$1"
@@ -10,8 +10,8 @@ fi
 echo "Server set to $SERVER"
 
 # Remove old files
-rm -r $WWW
-mkdir $WWW
+rm -rf $WWW
+mkdir -p $WWW
 
 # Get index.html file
 wget "$SERVER/index.html" -O "$WWW/index.html"
