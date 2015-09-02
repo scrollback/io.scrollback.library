@@ -412,7 +412,7 @@ public class CacheManager {
     private WebResourceResponse createResponse(File file) {
         String name = file.getName();
 
-        String mime = mimeTypes.get(name.substring(name.lastIndexOf(".")).substring(1));
+        String mime = mimeTypes.get(name.substring(name.lastIndexOf(".") + 1));
 
         InputStream stream = null;
 
@@ -423,7 +423,7 @@ public class CacheManager {
         }
 
         if (mime != null && stream != null) {
-            Log.d(TAG, "Creating response for " + file.getName() + " with mime type " + mime);
+            Log.d(TAG, "Setting mime type " + mime + " for " + file.getName());
 
             return new WebResourceResponse(mime, "UTF-8", stream);
         }
