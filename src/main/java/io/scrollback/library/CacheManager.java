@@ -47,8 +47,6 @@ public class CacheManager {
     private AssetManager assetManager;
     private String assetsPath;
 
-    private File fallbackDir;
-    private File cacheDir;
     private File wwwDir;
     private File tmpDir;
 
@@ -77,22 +75,16 @@ public class CacheManager {
     }
 
     public CacheManager cache(File path) {
-        cacheDir = new File(path, "CacheManager");
+        File cacheDir = new File(path, "CacheManager");
 
-        cacheDir.mkdirs();
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            Log.e(TAG, "Failed to create cache directory " + cacheDir.getAbsolutePath());
+        }
 
         wwwDir = new File(cacheDir, "www");
         tmpDir = new File(cacheDir, "tmp");
 
         Log.d(TAG, "Cache directory set to " + path);
-
-        return this;
-    }
-
-    public CacheManager fallback(File path) {
-        fallbackDir = path;
-
-        Log.d(TAG, "Fallback directory set to " + path);
 
         return this;
     }
@@ -109,7 +101,7 @@ public class CacheManager {
     public CacheManager unsafe(Boolean value) {
         isUnsafe = value;
 
-        if (isUnsafe == true) {
+        if (isUnsafe) {
             Log.d(TAG, "Unsafe mode, SSL errors will be ignored");
         }
 
@@ -167,8 +159,8 @@ public class CacheManager {
 
             String[] children = source.list();
 
-            for (int i = 0; i < children.length; i++) {
-                copyFiles(new File(source, children[i]), new File(target, children[i]));
+            for (String child : children) {
+                copyFiles(new File(source, child), new File(target, child));
             }
         } else {
             Log.d(TAG, "Copying file " + source.getName() + " to " + target.getParent());
@@ -234,16 +226,18 @@ public class CacheManager {
     private void downloadFile(String path, File dir) throws IOException {
         OkHttpClient client;
 
-        if (isUnsafe == true) {
+        if (isUnsafe) {
             client = getUnsafeOkHttpClient();
         } else {
             client = new OkHttpClient();
         }
 
-        Log.d(TAG, "Downloading file " + hostUrl + path + " to " + dir.getAbsolutePath());
+        String downloadUrl = hostUrl + (path.startsWith("/") ? path : "/" + path);
+
+        Log.d(TAG, "Downloading file " + downloadUrl + " to " + dir.getAbsolutePath());
 
         Request request = new Request.Builder()
-                .url(hostUrl + path)
+                .url(downloadUrl)
                 .build();
 
         try {
@@ -251,29 +245,20 @@ public class CacheManager {
 
             File file = new File(dir, path);
 
-            file.getParentFile().mkdirs();
-            file.createNewFile();
+            if (!file.exists() && !file.getParentFile().mkdirs() && !file.createNewFile()) {
+                Log.e(TAG, "Failed to create file " + file.getAbsolutePath());
+
+                throw new IOException();
+            }
 
             BufferedSink sink = Okio.buffer(Okio.sink(file));
 
             sink.writeAll(response.body().source());
             sink.close();
         } catch (IOException e) {
-            Log.e(TAG, "Failed to download file " + hostUrl + path);
+            Log.e(TAG, "Failed to download file " + downloadUrl);
 
             throw e;
-        }
-    }
-
-    private void emptyDir(File dir) {
-        Log.d(TAG, "Emptying directory " + dir.getAbsolutePath());
-
-        if (dir.isDirectory()) {
-            String[] children = dir.list();
-
-            for (int i = 0; i < children.length; i++) {
-                new File(dir, children[i]).delete();
-            }
         }
     }
 
@@ -303,7 +288,7 @@ public class CacheManager {
                         isCacheSection = true;
                     } else {
                         // Cache section ended
-                        if (isCacheSection == true) {
+                        if (isCacheSection) {
                             break;
                         }
                     }
@@ -327,16 +312,12 @@ public class CacheManager {
         return fileList;
     }
 
-    private void cleanUp() {
-        Log.d(TAG, "Cleaning up temporary files");
-
-        tmpDir.delete();
-    }
-
     private void refreshCache() throws IOException {
         Log.d(TAG, "Refreshing cache");
 
-        emptyDir(tmpDir);
+        if (tmpDir.delete()) {
+            Log.d(TAG, "Deleted temporary directory " + tmpDir.getAbsolutePath());
+        }
 
         downloadFile(indexPath, tmpDir);
 
@@ -409,19 +390,21 @@ public class CacheManager {
             }
         }
 
-        emptyDir(wwwDir);
+        if (wwwDir.delete()) {
+            Log.d(TAG, "Deleted directory " + wwwDir.getAbsolutePath());
+        }
 
         try {
             copyFiles(tmpDir, wwwDir);
         } catch (IOException e) {
             Log.e(TAG, "Failed to copy files from " + tmpDir.getAbsolutePath() + " to " + wwwDir.getAbsolutePath());
 
-            emptyDir(wwwDir);
+            if (wwwDir.delete()) {
+                Log.d(TAG, "Deleted directory " + wwwDir.getAbsolutePath());
+            }
 
             throw e;
         }
-
-        cleanUp();
     }
 
     public void execute() {
@@ -447,7 +430,7 @@ public class CacheManager {
                 @SuppressWarnings("deprecation" )
                 @Override
                 public WebResourceResponse shouldInterceptRequest (final WebView view, String url) {
-                    String path = url.replace(hostUrl, "");
+                    String path = url.replaceFirst("^" + hostUrl, "");
 
                     if (url.startsWith(hostUrl)) {
                         InputStream stream = null;
@@ -468,24 +451,12 @@ public class CacheManager {
                             if (assetManager != null && assetsPath != null) {
                                 try {
                                     stream = assetManager.open(assetsPath + path);
-
-                                    if (stream != null) {
-                                        Log.d(TAG, "File found in assets directory for " + url);
-                                    }
                                 } catch (IOException e) {
                                     // Do nothing
                                 }
-                            } else if (fallbackDir != null && fallbackDir.exists()) {
-                                File file = new File(fallbackDir, path);
 
-                                if (file.exists()) {
-                                    Log.d(TAG, "File found in fallback directory for " + url);
-
-                                    try {
-                                        stream = new FileInputStream(file);
-                                    } catch (FileNotFoundException e) {
-                                        Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
-                                    }
+                                if (stream != null) {
+                                    Log.d(TAG, "File found in assets directory for " + url);
                                 }
                             }
                         }
@@ -522,8 +493,6 @@ public class CacheManager {
                     refreshCache();
                 } catch (IOException e) {
                     Log.e(TAG, "Aborting refresh", e);
-
-                    cleanUp();
                 }
             }
         });

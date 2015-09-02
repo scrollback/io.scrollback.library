@@ -43,9 +43,6 @@ import com.google.android.gms.common.AccountPicker;
 
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -112,7 +109,8 @@ public abstract class ScrollbackFragment extends Fragment {
 
     public static String origin = Constants.HOST;
     public static String index = Constants.PROTOCOL + "//" + origin;
-    public static String home = index + Constants.PATH;
+    public static String path = Constants.PATH;
+    public static String home = index + path;
 
     public void setLocation(String protocol, String host, String path) {
         origin = host;
@@ -352,7 +350,7 @@ public abstract class ScrollbackFragment extends Fragment {
 
         WebSettings mWebSettings = mWebView.getSettings();
 
-        String appCachePath = getActivity().getCacheDir().getAbsolutePath();
+//        String appCachePath = getActivity().getCacheDir().getAbsolutePath();
 
         mWebSettings.setJavaScriptEnabled(true);
         mWebSettings.setJavaScriptCanOpenWindowsAutomatically(true);
@@ -428,7 +426,7 @@ public abstract class ScrollbackFragment extends Fragment {
                 .unsafe(debugMode)
                 .cache(getActivity().getCacheDir())
                 .fallback(getActivity().getAssets(), "www")
-                .load(index)
+                .load(index, path)
                 .into(mWebView)
                 .execute();
 
