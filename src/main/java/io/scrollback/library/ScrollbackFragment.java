@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
@@ -42,7 +43,9 @@ import com.google.android.gms.common.AccountPicker;
 
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -424,6 +427,7 @@ public abstract class ScrollbackFragment extends Fragment {
         new CacheManager()
                 .unsafe(debugMode)
                 .cache(getActivity().getCacheDir())
+                .fallback(getActivity().getAssets(), "www")
                 .load(index)
                 .into(mWebView)
                 .execute();

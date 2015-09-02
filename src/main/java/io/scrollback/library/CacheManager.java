@@ -1,6 +1,7 @@
 package io.scrollback.library;
 
 import android.annotation.SuppressLint;
+import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.webkit.WebResourceRequest;
@@ -42,6 +43,9 @@ public class CacheManager {
 
     private String hostUrl;
     private String indexPath;
+
+    private AssetManager assetManager;
+    private String assetsPath;
 
     private File fallbackDir;
     private File cacheDir;
@@ -85,14 +89,19 @@ public class CacheManager {
         return this;
     }
 
-    public CacheManager fallback(File path) throws FileNotFoundException {
+    public CacheManager fallback(File path) {
         fallbackDir = path;
 
-        if (!fallbackDir.exists()) {
-            throw new FileNotFoundException("The directory " + path + " doesn't exist.");
-        }
-
         Log.d(TAG, "Fallback directory set to " + path);
+
+        return this;
+    }
+
+    public CacheManager fallback(AssetManager assets, String path) {
+        assetManager = assets;
+        assetsPath = path;
+
+        Log.d(TAG, "Fallback directory set to assets directory " + path);
 
         return this;
     }
@@ -139,6 +148,15 @@ public class CacheManager {
         }
     }
 
+    private void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+
+        while((read = in.read(buffer)) != -1){
+            out.write(buffer, 0, read);
+        }
+    }
+
     private void copyFiles(File source, File target) throws IOException {
         if (source.isDirectory()) {
             Log.d(TAG, "Copying files from " + source.getAbsolutePath() + " to " + target.getAbsolutePath());
@@ -165,13 +183,7 @@ public class CacheManager {
             InputStream in = new FileInputStream(source);
             OutputStream out = new FileOutputStream(target);
 
-            // Copy the bits from instream to outstream
-            byte[] buf = new byte[1024];
-            int len;
-
-            while ((len = in.read(buf)) > 0) {
-                out.write(buf, 0, len);
-            }
+            copyFile(in, out);
 
             in.close();
             out.close();
@@ -228,7 +240,7 @@ public class CacheManager {
             client = new OkHttpClient();
         }
 
-        Log.d(TAG, "Downloading file " + hostUrl + path);
+        Log.d(TAG, "Downloading file " + hostUrl + path + " to " + dir.getAbsolutePath());
 
         Request request = new Request.Builder()
                 .url(hostUrl + path)
@@ -373,18 +385,21 @@ public class CacheManager {
 
         downloadFile(manifestPath, tmpDir);
 
-        String manifesttmp = readFileAsText(new File(tmpDir.getAbsolutePath(), manifestPath));
-        String manifestCached = readFileAsText(new File(wwwDir.getAbsolutePath(), manifestPath));
+        File tmpManifest = new File(tmpDir, manifestPath);
+        File wwwManifest = new File(wwwDir, manifestPath);
 
-        if (manifesttmp != null && manifestCached != null && manifesttmp.equals(manifestCached)) {
-            Log.d(TAG, "Cache manifest has not changed");
+        if (tmpManifest.exists() && wwwManifest.exists()) {
+            String wwwText = readFileAsText(wwwManifest);
+            String tmpText = readFileAsText(tmpManifest);
 
-            return;
+            if (tmpText != null && wwwText != null && tmpText.equals(wwwText)) {
+                Log.d(TAG, "Cache manifest has not changed");
+
+                return;
+            }
         }
 
-        File cacheManifest = new File(tmpDir.getAbsolutePath(), manifestPath);
-
-        List<String> fileList = listFiles(cacheManifest);
+        List<String> fileList = listFiles(tmpManifest);
 
         for (String file : fileList) {
             downloadFile(file, tmpDir);
@@ -409,48 +424,21 @@ public class CacheManager {
         cleanUp();
     }
 
-    private WebResourceResponse createResponse(File file) {
-        String name = file.getName();
-
-        String mime = mimeTypes.get(name.substring(name.lastIndexOf(".") + 1));
-
-        InputStream stream = null;
-
-        try {
-            stream = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
-        }
-
-        if (mime != null && stream != null) {
-            Log.d(TAG, "Setting mime type " + mime + " for " + file.getName());
-
-            return new WebResourceResponse(mime, "UTF-8", stream);
-        }
-
-        Log.d(TAG, "Failed to create a response for " + file.getAbsolutePath());
-
-        return null;
-    }
-
     public void execute() {
-        if (fallbackDir != null && fallbackDir.exists()) {
-            try {
-                if (wwwDir.exists()) {
-                    File[] contents = wwwDir.listFiles();
+        final boolean shouldUseCache;
 
-                    if (contents == null || contents.length == 0) {
-                        Log.d(TAG, "Cache directory is empty");
+        if (wwwDir.exists()) {
+            File[] contents = wwwDir.listFiles();
 
-                        copyFiles(fallbackDir, wwwDir);
-                    }
-                } else {
-                    copyFiles(fallbackDir, wwwDir);
-                }
-            } catch (IOException e) {
-                // Failed to read manifest file
-                Log.e(TAG, "Failed to copy files from " + fallbackDir.getAbsolutePath() + " to " + wwwDir.getAbsolutePath(), e);
+            if (contents == null || contents.length == 0) {
+                Log.d(TAG, "Cache directory is empty");
+
+                shouldUseCache = false;
+            } else {
+                shouldUseCache = true;
             }
+        } else {
+            shouldUseCache = false;
         }
 
         // Intercept requests from webview
@@ -459,13 +447,59 @@ public class CacheManager {
                 @SuppressWarnings("deprecation" )
                 @Override
                 public WebResourceResponse shouldInterceptRequest (final WebView view, String url) {
+                    String path = url.replace(hostUrl, "");
+
                     if (url.startsWith(hostUrl)) {
-                        File file = new File(wwwDir, url.replace(hostUrl, ""));
+                        InputStream stream = null;
 
-                        if (file.exists()) {
-                            Log.d(TAG, "File found in cache for " + url);
+                        if (shouldUseCache) {
+                            File file = new File(wwwDir, path);
 
-                            return createResponse(file);
+                            if (file.exists()) {
+                                Log.d(TAG, "File found in cache for " + url);
+
+                                try {
+                                    stream = new FileInputStream(file);
+                                } catch (FileNotFoundException e) {
+                                    Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
+                                }
+                            }
+                        } else {
+                            if (assetManager != null && assetsPath != null) {
+                                try {
+                                    stream = assetManager.open(assetsPath + path);
+
+                                    if (stream != null) {
+                                        Log.d(TAG, "File found in assets directory for " + url);
+                                    }
+                                } catch (IOException e) {
+                                    // Do nothing
+                                }
+                            } else if (fallbackDir != null && fallbackDir.exists()) {
+                                File file = new File(fallbackDir, path);
+
+                                if (file.exists()) {
+                                    Log.d(TAG, "File found in fallback directory for " + url);
+
+                                    try {
+                                        stream = new FileInputStream(file);
+                                    } catch (FileNotFoundException e) {
+                                        Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (stream != null) {
+                            String mime = mimeTypes.get(path.substring(path.lastIndexOf(".") + 1));
+
+                            if (mime != null) {
+                                Log.d(TAG, "Setting mime type " + mime + " for " + path);
+
+                                return new WebResourceResponse(mime, "UTF-8", stream);
+                            } else {
+                                Log.e(TAG, "Couldn't determine mime type for " + path);
+                            }
                         }
                     }
 
