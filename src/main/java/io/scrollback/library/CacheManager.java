@@ -462,7 +462,7 @@ public class CacheManager {
                         }
 
                         if (stream != null) {
-                            String mime = mimeTypes.get(path.substring(path.lastIndexOf(".") + 1));
+                            String mime = mimeTypes.get(path.equals(indexPath) ? "html" : path.substring(path.lastIndexOf(".") + 1));
 
                             if (mime != null) {
                                 Log.d(TAG, "Setting mime type " + mime + " for " + path);
