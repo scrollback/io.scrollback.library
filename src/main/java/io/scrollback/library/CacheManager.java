@@ -1,7 +1,12 @@
 package io.scrollback.library;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -33,12 +38,17 @@ import okio.BufferedSink;
 import okio.Okio;
 
 public class CacheManager {
+    private MimeTypes mimeTypes = new MimeTypes();
+
     private String hostUrl;
     private String indexPath;
+
     private File fallbackDir;
     private File cacheDir;
     private File wwwDir;
     private File tmpDir;
+
+    private WebView webView;
 
     private boolean isUnsafe;
 
@@ -93,6 +103,14 @@ public class CacheManager {
         if (isUnsafe == true) {
             Log.d(TAG, "Unsafe mode, SSL errors will be ignored");
         }
+
+        return this;
+    }
+
+    public CacheManager into(WebView w) {
+        webView = w;
+
+        Log.d(TAG, "WebView set to " + w);
 
         return this;
     }
@@ -391,7 +409,31 @@ public class CacheManager {
         cleanUp();
     }
 
-    private void executeSync() {
+    private WebResourceResponse createResponse(File file) {
+        String name = file.getName();
+
+        String mime = mimeTypes.get(name.substring(name.lastIndexOf(".")).substring(1));
+
+        InputStream stream = null;
+
+        try {
+            stream = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
+        }
+
+        if (mime != null && stream != null) {
+            Log.d(TAG, "Creating response for " + file.getName() + " with mime type " + mime);
+
+            return new WebResourceResponse(mime, "UTF-8", stream);
+        }
+
+        Log.d(TAG, "Failed to create a response for " + file.getAbsolutePath());
+
+        return null;
+    }
+
+    public void execute() {
         if (fallbackDir != null && fallbackDir.exists()) {
             try {
                 if (wwwDir.exists()) {
@@ -411,21 +453,44 @@ public class CacheManager {
             }
         }
 
-        // Refresh the cache
-        try {
-            refreshCache();
-        } catch (IOException e) {
-            Log.e(TAG, "Aborting refresh", e);
+        // Intercept requests from webview
+        if (webView != null) {
+            webView.setWebViewClient(new WebViewClient() {
+                @SuppressWarnings("deprecation" )
+                @Override
+                public WebResourceResponse shouldInterceptRequest (final WebView view, String url) {
+                    if (url.startsWith(hostUrl)) {
+                        File file = new File(wwwDir, url.replace(hostUrl, ""));
 
-            cleanUp();
+                        if (file.exists()) {
+                            Log.d(TAG, "File found in cache for " + url);
+
+                            return createResponse(file);
+                        }
+                    }
+
+                    return null;
+                }
+
+                @SuppressLint("NewApi" )
+                @Override
+                public WebResourceResponse shouldInterceptRequest (final WebView view, WebResourceRequest request) {
+                    return shouldInterceptRequest(view, request.getUrl().toString());
+                }
+            });
         }
-    }
 
-    public void execute() {
+        // Refresh the cache
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
-                executeSync();
+                try {
+                    refreshCache();
+                } catch (IOException e) {
+                    Log.e(TAG, "Aborting refresh", e);
+
+                    cleanUp();
+                }
             }
         });
     }

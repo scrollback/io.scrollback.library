@@ -356,8 +356,8 @@ public abstract class ScrollbackFragment extends Fragment {
         mWebSettings.setSupportZoom(false);
         mWebSettings.setSaveFormData(true);
         mWebSettings.setDomStorageEnabled(true);
-        mWebSettings.setAppCacheEnabled(true);
-        mWebSettings.setAppCachePath(appCachePath);
+//        mWebSettings.setAppCacheEnabled(true);
+//        mWebSettings.setAppCachePath(appCachePath);
         mWebSettings.setAllowFileAccess(true);
         mWebSettings.setCacheMode(LOAD_DEFAULT);
 
@@ -423,8 +423,9 @@ public abstract class ScrollbackFragment extends Fragment {
 
         new CacheManager()
                 .unsafe(debugMode)
-                .load(index)
                 .cache(getActivity().getCacheDir())
+                .load(index)
+                .into(mWebView)
                 .execute();
 
         if (initialUrl != null) {
