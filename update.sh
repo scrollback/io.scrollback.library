@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVER="http://scrollback.io"
+SERVER="https://scrollback.io"
 WWW="src/main/assets/www"
 
 if [[ $1 ]]; then
