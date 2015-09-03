@@ -407,6 +407,51 @@ public class CacheManager {
         }
     }
 
+    private WebResourceResponse getResponse(String url, boolean shouldUseCache) {
+        String path = url.replaceFirst("^" + hostUrl, "");
+        InputStream stream = null;
+
+        if (shouldUseCache) {
+            File file = new File(wwwDir, path);
+
+            if (file.exists()) {
+                Log.d(TAG, "File found in cache for " + url);
+
+                try {
+                    stream = new FileInputStream(file);
+                } catch (FileNotFoundException e) {
+                    Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
+                }
+            }
+        } else {
+            if (assetManager != null && assetsPath != null) {
+                try {
+                    stream = assetManager.open(assetsPath + path);
+                } catch (IOException e) {
+                    // Do nothing
+                }
+
+                if (stream != null) {
+                    Log.d(TAG, "File found in assets directory for " + url);
+                }
+            }
+        }
+
+        if (stream != null) {
+            String mime = mimeTypes.get(path.equals(indexPath) ? "html" : path.substring(path.lastIndexOf(".") + 1));
+
+            if (mime != null) {
+                Log.d(TAG, "Setting mime type " + mime + " for " + path);
+
+                return new WebResourceResponse(mime, "UTF-8", stream);
+            } else {
+                Log.e(TAG, "Couldn't determine mime type for " + path);
+            }
+        }
+
+        return null;
+    }
+
     public void execute() {
         final boolean shouldUseCache;
 
@@ -430,57 +475,35 @@ public class CacheManager {
                 @SuppressWarnings("deprecation" )
                 @Override
                 public WebResourceResponse shouldInterceptRequest (final WebView view, String url) {
-                    String path = url.replaceFirst("^" + hostUrl, "");
+                    WebResourceResponse res;
 
                     if (url.startsWith(hostUrl)) {
-                        InputStream stream = null;
+                        res = getResponse(url, shouldUseCache);
 
-                        if (shouldUseCache) {
-                            File file = new File(wwwDir, path);
-
-                            if (file.exists()) {
-                                Log.d(TAG, "File found in cache for " + url);
-
-                                try {
-                                    stream = new FileInputStream(file);
-                                } catch (FileNotFoundException e) {
-                                    Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
-                                }
-                            }
-                        } else {
-                            if (assetManager != null && assetsPath != null) {
-                                try {
-                                    stream = assetManager.open(assetsPath + path);
-                                } catch (IOException e) {
-                                    // Do nothing
-                                }
-
-                                if (stream != null) {
-                                    Log.d(TAG, "File found in assets directory for " + url);
-                                }
-                            }
-                        }
-
-                        if (stream != null) {
-                            String mime = mimeTypes.get(path.equals(indexPath) ? "html" : path.substring(path.lastIndexOf(".") + 1));
-
-                            if (mime != null) {
-                                Log.d(TAG, "Setting mime type " + mime + " for " + path);
-
-                                return new WebResourceResponse(mime, "UTF-8", stream);
-                            } else {
-                                Log.e(TAG, "Couldn't determine mime type for " + path);
-                            }
+                        if (res != null) {
+                            return res;
                         }
                     }
 
-                    return null;
+                    return super.shouldInterceptRequest(view, url);
                 }
 
                 @SuppressLint("NewApi" )
                 @Override
                 public WebResourceResponse shouldInterceptRequest (final WebView view, WebResourceRequest request) {
-                    return shouldInterceptRequest(view, request.getUrl().toString());
+                    String url = request.getUrl().toString();
+
+                    WebResourceResponse res;
+
+                    if (url.startsWith(hostUrl)) {
+                        res = getResponse(url, shouldUseCache);
+
+                        if (res != null) {
+                            return res;
+                        }
+                    }
+
+                    return super.shouldInterceptRequest(view, request);
                 }
             });
         }
@@ -492,6 +515,8 @@ public class CacheManager {
                 try {
                     refreshCache();
                 } catch (IOException e) {
+                    tmpDir.delete();
+
                     Log.e(TAG, "Aborting refresh", e);
                 }
             }
