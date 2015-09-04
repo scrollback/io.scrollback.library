@@ -434,29 +434,29 @@ public abstract class ScrollbackFragment extends Fragment {
         mWebView.setWebViewClient(new WebViewClient() {
             @SuppressWarnings("deprecation")
             @Override
-            public WebResourceResponse shouldInterceptRequest(final WebView view, String url) {
+            public WebResourceResponse shouldInterceptRequest(final WebView view, String requestUrl) {
                 WebResourceResponse res;
 
-                if (url.startsWith(index)) {
-                    res = cacheManager.getCachedResponse(url);
+                if (requestUrl.startsWith(index)) {
+                    res = cacheManager.getCachedResponse(Uri.parse(requestUrl).getPath());
 
                     if (res != null) {
                         return res;
                     }
                 }
 
-                return super.shouldInterceptRequest(view, url);
+                return super.shouldInterceptRequest(view, requestUrl);
             }
 
             @SuppressLint("NewApi")
             @Override
             public WebResourceResponse shouldInterceptRequest(final WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
+                Uri url = request.getUrl();
 
                 WebResourceResponse res;
 
-                if (url.startsWith(index)) {
-                    res = cacheManager.getCachedResponse(url);
+                if (url.toString().startsWith(index)) {
+                    res = cacheManager.getCachedResponse(url.getPath());
 
                     if (res != null) {
                         return res;
