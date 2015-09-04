@@ -13,8 +13,8 @@ echo "Server set to $SERVER"
 rm -rf $WWW
 mkdir -p $WWW
 
-# Get index.html file
-wget "$SERVER/index.html" -O "$WWW/index.html"
+# Get index file
+wget "$SERVER/me" -O "$WWW/me"
 
 # Get the manifest file
 wget "$SERVER/manifest.appcache" -O "$WWW/manifest.appcache"
