@@ -50,8 +50,6 @@ public class CacheManager {
     private File wwwDir;
     private File tmpDir;
 
-    private WebView webView;
-
     private boolean isUnsafe;
 
     private String TAG = "CacheManager";
@@ -104,14 +102,6 @@ public class CacheManager {
         if (isUnsafe) {
             Log.d(TAG, "Unsafe mode, SSL errors will be ignored");
         }
-
-        return this;
-    }
-
-    public CacheManager into(WebView w) {
-        webView = w;
-
-        Log.d(TAG, "WebView set to " + w);
 
         return this;
     }
@@ -407,21 +397,45 @@ public class CacheManager {
         }
     }
 
-    private WebResourceResponse getResponse(String url, boolean shouldUseCache) {
+    public void execute() {
+        if (wwwDir.exists()) {
+            File[] contents = wwwDir.listFiles();
+
+            if (contents == null || contents.length == 0) {
+                Log.d(TAG, "Cache directory is empty");
+
+                wwwDir.delete();
+            }
+        }
+
+        // Refresh the cache
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    refreshCache();
+                } catch (IOException e) {
+                    tmpDir.delete();
+
+                    Log.e(TAG, "Aborting refresh", e);
+                }
+            }
+        });
+    }
+
+    public WebResourceResponse getCachedResponse(String url) {
         String path = url.replaceFirst("^" + hostUrl, "");
         InputStream stream = null;
 
-        if (shouldUseCache) {
-            File file = new File(wwwDir, path);
+        File file = new File(wwwDir, path);
 
-            if (file.exists()) {
-                Log.d(TAG, "File found in cache for " + url);
+        if (file.exists()) {
+            Log.d(TAG, "File found in cache for " + url);
 
-                try {
-                    stream = new FileInputStream(file);
-                } catch (FileNotFoundException e) {
-                    Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
-                }
+            try {
+                stream = new FileInputStream(file);
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, "Failed to initialize stream from " + file.getAbsolutePath(), e);
             }
         } else {
             if (assetManager != null && assetsPath != null) {
@@ -450,76 +464,5 @@ public class CacheManager {
         }
 
         return null;
-    }
-
-    public void execute() {
-        final boolean shouldUseCache;
-
-        if (wwwDir.exists()) {
-            File[] contents = wwwDir.listFiles();
-
-            if (contents == null || contents.length == 0) {
-                Log.d(TAG, "Cache directory is empty");
-
-                shouldUseCache = false;
-            } else {
-                shouldUseCache = true;
-            }
-        } else {
-            shouldUseCache = false;
-        }
-
-        // Intercept requests from webview
-        if (webView != null) {
-            webView.setWebViewClient(new WebViewClient() {
-                @SuppressWarnings("deprecation" )
-                @Override
-                public WebResourceResponse shouldInterceptRequest (final WebView view, String url) {
-                    WebResourceResponse res;
-
-                    if (url.startsWith(hostUrl)) {
-                        res = getResponse(url, shouldUseCache);
-
-                        if (res != null) {
-                            return res;
-                        }
-                    }
-
-                    return super.shouldInterceptRequest(view, url);
-                }
-
-                @SuppressLint("NewApi" )
-                @Override
-                public WebResourceResponse shouldInterceptRequest (final WebView view, WebResourceRequest request) {
-                    String url = request.getUrl().toString();
-
-                    WebResourceResponse res;
-
-                    if (url.startsWith(hostUrl)) {
-                        res = getResponse(url, shouldUseCache);
-
-                        if (res != null) {
-                            return res;
-                        }
-                    }
-
-                    return super.shouldInterceptRequest(view, request);
-                }
-            });
-        }
-
-        // Refresh the cache
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    refreshCache();
-                } catch (IOException e) {
-                    tmpDir.delete();
-
-                    Log.e(TAG, "Aborting refresh", e);
-                }
-            }
-        });
     }
 }

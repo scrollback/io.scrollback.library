@@ -23,6 +23,8 @@ import android.webkit.JavascriptInterface;
 import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -279,8 +281,6 @@ public abstract class ScrollbackFragment extends Fragment {
             }
         }
 
-        mWebView.setWebViewClient(mWebViewClient);
-
         mWebView.setWebChromeClient(new WebChromeClient() {
             // For Android < 3.0
             @SuppressWarnings("unused")
@@ -422,13 +422,99 @@ public abstract class ScrollbackFragment extends Fragment {
 
         mWebView.addJavascriptInterface(sbInterface, "Android");
 
-        new CacheManager()
+        final CacheManager cacheManager = new CacheManager();
+
+        cacheManager
                 .unsafe(debugMode)
                 .cache(getActivity().getCacheDir())
                 .fallback(getActivity().getAssets(), "www")
                 .load(index, path)
-                .into(mWebView)
                 .execute();
+
+        mWebView.setWebViewClient(new WebViewClient() {
+            @SuppressWarnings("deprecation")
+            @Override
+            public WebResourceResponse shouldInterceptRequest(final WebView view, String url) {
+                WebResourceResponse res;
+
+                if (url.startsWith(index)) {
+                    res = cacheManager.getCachedResponse(url);
+
+                    if (res != null) {
+                        return res;
+                    }
+                }
+
+                return super.shouldInterceptRequest(view, url);
+            }
+
+            @SuppressLint("NewApi")
+            @Override
+            public WebResourceResponse shouldInterceptRequest(final WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
+
+                WebResourceResponse res;
+
+                if (url.startsWith(index)) {
+                    res = cacheManager.getCachedResponse(url);
+
+                    if (res != null) {
+                        return res;
+                    }
+                }
+
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            @SuppressWarnings("unused")
+            public boolean onConsoleMessage(ConsoleMessage cm) {
+                Log.d(getString(R.string.app_name), cm.message() + " -- From line "
+                        + cm.lineNumber() + " of "
+                        + cm.sourceId());
+
+                return true;
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                Uri uri = Uri.parse(url);
+
+                if (uri.getAuthority().equals(origin)) {
+                    // This is my web site, so do not override; let my WebView load the page
+                    return false;
+
+
+                } else {
+                    // Otherwise, the link is not for a page on my site, so launch another Activity that handles URLs
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    startActivity(intent);
+
+                    return true;
+                }
+            }
+
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                mLoadError.setVisibility(View.VISIBLE);
+                mLoading.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                if (debugMode) {
+                    handler.proceed();
+                }
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+
+                if (customPrimaryStyle != null) {
+                    bridge.setStyleSheet(customPrimaryStyle);
+                }
+            }
+        });
 
         if (initialUrl != null) {
             mWebView.loadUrl(initialUrl);
@@ -538,58 +624,6 @@ public abstract class ScrollbackFragment extends Fragment {
 
         return false;
     }
-
-    private WebViewClient mWebViewClient = new WebViewClient() {
-
-        @SuppressWarnings("unused")
-        public boolean onConsoleMessage(ConsoleMessage cm) {
-            Log.d(getString(R.string.app_name), cm.message() + " -- From line "
-                    + cm.lineNumber() + " of "
-                    + cm.sourceId() );
-
-            return true;
-        }
-
-        @Override
-        public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            Uri uri = Uri.parse(url);
-
-            if (uri.getAuthority().equals(origin)) {
-                // This is my web site, so do not override; let my WebView load the page
-                return false;
-
-
-            } else {
-                // Otherwise, the link is not for a page on my site, so launch another Activity that handles URLs
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                startActivity(intent);
-
-                return true;
-            }
-        }
-
-        @Override
-        public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-            mLoadError.setVisibility(View.VISIBLE);
-            mLoading.setVisibility(View.GONE);
-        }
-
-        @Override
-        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-            if (debugMode) {
-                handler.proceed();
-            }
-        }
-
-        @Override
-        public void onPageFinished(WebView view, String url) {
-            super.onPageFinished(view, url);
-
-            if (customPrimaryStyle != null) {
-                bridge.setStyleSheet(customPrimaryStyle);
-            }
-        }
-    };
 
     FacebookCallback<LoginResult> loginCallback = new FacebookCallback<LoginResult>() {
         @Override
