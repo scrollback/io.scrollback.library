@@ -430,6 +430,37 @@ public abstract class ScrollbackFragment extends Fragment {
                 .cache(getActivity().getCacheDir())
                 .fallback(getActivity().getAssets(), "www")
                 .load(index, path)
+                .callback(new CacheManager.Callback() {
+                    @Override
+                    public void onCached() {
+                        fireAppCacheEvent("cached");
+                    }
+
+                    @Override
+                    public void onChecking() {
+                        fireAppCacheEvent("checking");
+                    }
+
+                    @Override
+                    public void onDownloading() {
+                        fireAppCacheEvent("downloading");
+                    }
+
+                    @Override
+                    public void onError() {
+                        fireAppCacheEvent("error");
+                    }
+
+                    @Override
+                    public void onNoUpdate() {
+                        fireAppCacheEvent("noupdate");
+                    }
+
+                    @Override
+                    public void onUpdateReady() {
+                        fireAppCacheEvent("updateready");
+                    }
+                })
                 .execute();
 
         mWebView.setWebViewClient(new WebViewClient() {
@@ -544,6 +575,10 @@ public abstract class ScrollbackFragment extends Fragment {
         LoginManager.getInstance().registerCallback(callbackManager, loginCallback);
 
         return v;
+    }
+
+    private void fireAppCacheEvent(String type) {
+        bridge.evaluateJavascript("window.applicationCache.dispatchEvent(new Event('" + type + "'))");
     }
 
     @Override

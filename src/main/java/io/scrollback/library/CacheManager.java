@@ -429,7 +429,7 @@ public class CacheManager {
 
     public void refreshCache() {
         if (isRefreshing) {
-            Log.d(TAG, "Cache refresh already in progress.");
+            Log.d(TAG, "Cache refresh already in progress");
 
             return;
         }
