@@ -1,13 +1,9 @@
 package io.scrollback.library;
 
-import android.annotation.SuppressLint;
 import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -51,6 +47,8 @@ public class CacheManager {
     private File tmpDir;
 
     private boolean isUnsafe;
+
+    private boolean isRefreshing = false;
 
     private String TAG = "CacheManager";
 
@@ -302,7 +300,7 @@ public class CacheManager {
         return fileList;
     }
 
-    private void refreshCache() throws IOException {
+    private void refresh() throws IOException {
         Log.d(TAG, "Refreshing cache");
 
         if (tmpDir.delete()) {
@@ -397,6 +395,32 @@ public class CacheManager {
         }
     }
 
+    public void refreshCache() {
+        if (isRefreshing) {
+            Log.d(TAG, "Cache refresh already in progress.");
+
+            return;
+        }
+
+        // Refresh the cache
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                isRefreshing = true;
+
+                try {
+                    refresh();
+                } catch (IOException e) {
+                    tmpDir.delete();
+
+                    Log.e(TAG, "Aborting cache refresh", e);
+                }
+
+                isRefreshing = false;
+            }
+        });
+    }
+
     public void execute() {
         if (wwwDir.exists()) {
             File[] contents = wwwDir.listFiles();
@@ -409,18 +433,7 @@ public class CacheManager {
         }
 
         // Refresh the cache
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    refreshCache();
-                } catch (IOException e) {
-                    tmpDir.delete();
-
-                    Log.e(TAG, "Aborting refresh", e);
-                }
-            }
-        });
+        refreshCache();
     }
 
     public WebResourceResponse getCachedResponse(String url) {

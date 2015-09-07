@@ -7,6 +7,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
@@ -435,10 +436,8 @@ public abstract class ScrollbackFragment extends Fragment {
             @SuppressWarnings("deprecation")
             @Override
             public WebResourceResponse shouldInterceptRequest(final WebView view, String requestUrl) {
-                WebResourceResponse res;
-
                 if (requestUrl.startsWith(index)) {
-                    res = cacheManager.getCachedResponse(Uri.parse(requestUrl).getPath());
+                    WebResourceResponse res = cacheManager.getCachedResponse(Uri.parse(requestUrl).getPath());
 
                     if (res != null) {
                         return res;
@@ -453,10 +452,8 @@ public abstract class ScrollbackFragment extends Fragment {
             public WebResourceResponse shouldInterceptRequest(final WebView view, WebResourceRequest request) {
                 Uri url = request.getUrl();
 
-                WebResourceResponse res;
-
                 if (url.toString().startsWith(index)) {
-                    res = cacheManager.getCachedResponse(url.getPath());
+                    WebResourceResponse res = cacheManager.getCachedResponse(url.getPath());
 
                     if (res != null) {
                         return res;
@@ -504,6 +501,14 @@ public abstract class ScrollbackFragment extends Fragment {
                 if (debugMode) {
                     handler.proceed();
                 }
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+
+                // Refresh cache on reloads
+                cacheManager.refreshCache();
             }
 
             @Override
