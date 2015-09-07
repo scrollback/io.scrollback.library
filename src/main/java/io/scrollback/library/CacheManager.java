@@ -46,6 +46,8 @@ public class CacheManager {
     private File wwwDir;
     private File tmpDir;
 
+    private Callback cacheCallback;
+
     private boolean isUnsafe;
 
     private boolean isRefreshing = false;
@@ -100,6 +102,12 @@ public class CacheManager {
         if (isUnsafe) {
             Log.d(TAG, "Unsafe mode, SSL errors will be ignored");
         }
+
+        return this;
+    }
+
+    public CacheManager callback(Callback cb) {
+        cacheCallback = cb;
 
         return this;
     }
@@ -300,11 +308,17 @@ public class CacheManager {
         return fileList;
     }
 
-    private void refresh() throws IOException {
-        Log.d(TAG, "Refreshing cache");
+    private void updateCache() throws IOException {
+        boolean isFirst = !wwwDir.exists();
 
         if (tmpDir.delete()) {
             Log.d(TAG, "Deleted temporary directory " + tmpDir.getAbsolutePath());
+        }
+
+        Log.d(TAG, "Checking update");
+
+        if (cacheCallback != null) {
+            cacheCallback.onChecking();
         }
 
         downloadFile(indexPath, tmpDir);
@@ -364,8 +378,18 @@ public class CacheManager {
             if (tmpText != null && wwwText != null && tmpText.equals(wwwText)) {
                 Log.d(TAG, "Cache manifest has not changed");
 
+                if (cacheCallback != null) {
+                    cacheCallback.onNoUpdate();
+                }
+
                 return;
             }
+        }
+
+        Log.d(TAG, "Refreshing cache");
+
+        if (cacheCallback != null) {
+            cacheCallback.onDownloading();
         }
 
         List<String> fileList = listFiles(tmpManifest);
@@ -393,6 +417,14 @@ public class CacheManager {
 
             throw e;
         }
+
+        if (cacheCallback != null) {
+            if (isFirst) {
+                cacheCallback.onCached();
+            }
+
+            cacheCallback.onUpdateReady();
+        }
     }
 
     public void refreshCache() {
@@ -409,9 +441,13 @@ public class CacheManager {
                 isRefreshing = true;
 
                 try {
-                    refresh();
+                    updateCache();
                 } catch (IOException e) {
                     tmpDir.delete();
+
+                    if (cacheCallback != null) {
+                        cacheCallback.onError();
+                    }
 
                     Log.e(TAG, "Aborting cache refresh", e);
                 }
@@ -477,5 +513,19 @@ public class CacheManager {
         }
 
         return null;
+    }
+
+    public interface Callback {
+        void onCached();
+
+        void onChecking();
+
+        void onDownloading();
+
+        void onError();
+
+        void onNoUpdate();
+
+        void onUpdateReady();
     }
 }
