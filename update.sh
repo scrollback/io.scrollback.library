@@ -14,10 +14,10 @@ rm -rf $WWW
 mkdir -p $WWW
 
 # Get index file
-wget "$SERVER/me" -O "$WWW/me"
+wget --no-check-certificate "$SERVER/me" -O "$WWW/me"
 
 # Get the manifest file
-wget "$SERVER/manifest.appcache" -O "$WWW/manifest.appcache"
+wget --no-check-certificate "$SERVER/manifest.appcache" -O "$WWW/manifest.appcache"
 
 # Read the manifest appcache
 ISCACHE=false
@@ -40,7 +40,7 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $ISCACHE == true && $line ]]; then
         mkdir -p "$WWW/${line%/*}"
 
-        wget "$SERVER/$line" -O "$WWW/$line"
+        wget --no-check-certificate "$SERVER/$line" -O "$WWW/$line"
     fi
 
 done < "$WWW/manifest.appcache"
