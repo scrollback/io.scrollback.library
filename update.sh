@@ -1,11 +1,34 @@
 #!/bin/bash
 
-SERVER="https://scrollback.io"
-WWW="src/main/assets/www"
+downloadFile() {
+    echo "Downloading $1 to $(pwd)/$2"
+    curl -C - -L -k -# $1 > $2
 
-if [[ $1 ]]; then
-    SERVER="$1"
+    [[ $? == 0 ]] || exit 1
+}
+
+getVariable() {
+    echo $(grep "$1" "$2" | tr " " "\n" | tail -n 1 | sed 's/[";]//g')
+}
+
+DIRNAME="$1"
+PACKAGE="$2"
+FILENAME="$3"
+
+if [[ "$DIRNAME" != "" && "$PACKAGE" != "" && "$FILENAME" != "" ]]; then
+    CONSTANTS="$DIRNAME/java/$(echo $PACKAGE | sed 's/\./\//g')/$FILENAME"
+
+    PROTOCOL=$(getVariable "PROTOCOL" "$CONSTANTS")
+    HOST=$(getVariable "HOST" "$CONSTANTS")
+    INDEX=$(getVariable "PATH" "$CONSTANTS")
+else
+    echo "Invalid parameters passed"
+
+    exit 1
 fi
+
+SERVER="$PROTOCOL//$HOST"
+WWW="$DIRNAME/assets/www"
 
 echo "Server set to $SERVER"
 
@@ -14,10 +37,10 @@ rm -rf $WWW
 mkdir -p $WWW
 
 # Get index file
-wget --no-check-certificate "$SERVER/me" -O "$WWW/me"
+downloadFile "$SERVER/$INDEX" "$WWW/$INDEX"
 
 # Get the manifest file
-wget --no-check-certificate "$SERVER/manifest.appcache" -O "$WWW/manifest.appcache"
+downloadFile "$SERVER/manifest.appcache" "$WWW/manifest.appcache"
 
 # Read the manifest appcache
 ISCACHE=false
@@ -40,7 +63,7 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $ISCACHE == true && $line ]]; then
         mkdir -p "$WWW/${line%/*}"
 
-        wget --no-check-certificate "$SERVER/$line" -O "$WWW/$line"
+        downloadFile "$SERVER/$line" "$WWW/$line"
     fi
 
 done < "$WWW/manifest.appcache"
