@@ -231,6 +231,8 @@ public abstract class ScrollbackFragment extends Fragment {
                     }
                 }
 
+                pendingMessages = new ArrayList<>();
+
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
