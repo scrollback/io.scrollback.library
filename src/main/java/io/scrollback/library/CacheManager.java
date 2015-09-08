@@ -54,62 +54,104 @@ public class CacheManager {
 
     private String TAG = "CacheManager";
 
-    public CacheManager load(String url, String path) {
+    public interface Callback {
+        void onCached();
+
+        void onChecking();
+
+        void onDownloading();
+
+        void onError();
+
+        void onNoUpdate();
+
+        void onUpdateReady();
+    }
+
+    public static class Builder {
+        private String url;
+        private String path;
+
+        private File cache;
+
+        private AssetManager fallbackAssetManager;
+
+        private String fallbackAssetsPath;
+
+        private boolean unsafeMode;
+
+        private Callback callback;
+
+        public Builder setIndex(String u, String p) {
+            url = u;
+            path = p;
+
+            return this;
+        }
+
+        public Builder setCachePath(File c) {
+            cache = c;
+
+            return this;
+        }
+
+        public Builder setFallback(AssetManager m, String p) {
+            fallbackAssetManager = m;
+            fallbackAssetsPath = p;
+
+            return this;
+        }
+
+        public Builder setUnsafeMode(boolean unsafe) {
+            unsafeMode = unsafe;
+
+            return this;
+        }
+
+        public Builder setCallback(Callback cb) {
+            callback = cb;
+
+            return this;
+        }
+
+        public CacheManager build() {
+            CacheManager c = new CacheManager(url, path, cache, fallbackAssetManager, fallbackAssetsPath);
+
+            c.setUnsafeMode(unsafeMode);
+            c.setCallback(callback);
+
+            return c;
+        }
+    }
+
+    CacheManager(String host, String path, File cacheDir, AssetManager fallbackAssetManager, String fallbackAssetsPath) {
+        hostUrl = host;
+
         if (path == null) {
             indexPath = "/index.html";
         } else {
             indexPath = path;
-
-            Log.d(TAG, "Index file path set to " + indexPath);
         }
 
-        hostUrl = url;
+        assetManager = fallbackAssetManager;
+        assetsPath = fallbackAssetsPath;
 
-        return this;
+        File dir = new File(cacheDir, "CacheManager");
+
+        wwwDir = new File(dir, "www");
+        tmpDir = new File(dir, "tmp");
     }
 
-    public CacheManager load(String url) {
-        return load(url, null);
-    }
-
-    public CacheManager cache(File path) {
-        File cacheDir = new File(path, "CacheManager");
-
-        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            Log.e(TAG, "Failed to create cache directory " + cacheDir.getAbsolutePath());
-        }
-
-        wwwDir = new File(cacheDir, "www");
-        tmpDir = new File(cacheDir, "tmp");
-
-        Log.d(TAG, "Cache directory set to " + path);
-
-        return this;
-    }
-
-    public CacheManager fallback(AssetManager assets, String path) {
-        assetManager = assets;
-        assetsPath = path;
-
-        Log.d(TAG, "Fallback directory set to assets directory " + path);
-
-        return this;
-    }
-
-    public CacheManager unsafe(Boolean value) {
+    public void setUnsafeMode(Boolean value) {
         isUnsafe = value;
 
         if (isUnsafe) {
             Log.d(TAG, "Unsafe mode, SSL errors will be ignored");
         }
-
-        return this;
     }
 
-    public CacheManager callback(Callback cb) {
+    public void setCallback(Callback cb) {
         cacheCallback = cb;
-
-        return this;
     }
 
     private String readFileAsText(File file) {
@@ -200,7 +242,9 @@ public class CacheManager {
 
             // Install the all-trusting trust manager
             final SSLContext sslContext = SSLContext.getInstance("SSL");
+
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
             // Create an ssl socket factory with our all-trusting manager
             final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
@@ -309,6 +353,16 @@ public class CacheManager {
     }
 
     private void updateCache() throws IOException {
+        if (wwwDir.exists()) {
+            File[] contents = wwwDir.listFiles();
+
+            if (contents == null || contents.length == 0) {
+                Log.d(TAG, "Cache directory is empty");
+
+                wwwDir.delete();
+            }
+        }
+
         boolean isFirst = !wwwDir.exists();
 
         if (tmpDir.delete()) {
@@ -457,21 +511,6 @@ public class CacheManager {
         });
     }
 
-    public void execute() {
-        if (wwwDir.exists()) {
-            File[] contents = wwwDir.listFiles();
-
-            if (contents == null || contents.length == 0) {
-                Log.d(TAG, "Cache directory is empty");
-
-                wwwDir.delete();
-            }
-        }
-
-        // Refresh the cache
-        refreshCache();
-    }
-
     public WebResourceResponse getCachedResponse(String url) {
         String path = url.replaceFirst("^" + hostUrl, "");
         InputStream stream = null;
@@ -513,19 +552,5 @@ public class CacheManager {
         }
 
         return null;
-    }
-
-    public interface Callback {
-        void onCached();
-
-        void onChecking();
-
-        void onDownloading();
-
-        void onError();
-
-        void onNoUpdate();
-
-        void onUpdateReady();
     }
 }

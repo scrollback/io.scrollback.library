@@ -423,45 +423,44 @@ public abstract class ScrollbackFragment extends Fragment {
 
         mWebView.addJavascriptInterface(sbInterface, "Android");
 
-        final CacheManager cacheManager = new CacheManager();
+        final CacheManager cacheManager =
+                new CacheManager.Builder()
+                        .setIndex(index, path)
+                        .setCachePath(getActivity().getCacheDir())
+                        .setFallback(getActivity().getAssets(), "www")
+                        .setUnsafeMode(debugMode)
+                        .setCallback(new CacheManager.Callback() {
+                            @Override
+                            public void onCached() {
+                                fireAppCacheEvent("cached");
+                            }
 
-        cacheManager
-                .unsafe(debugMode)
-                .cache(getActivity().getCacheDir())
-                .fallback(getActivity().getAssets(), "www")
-                .load(index, path)
-                .callback(new CacheManager.Callback() {
-                    @Override
-                    public void onCached() {
-                        fireAppCacheEvent("cached");
-                    }
+                            @Override
+                            public void onChecking() {
+                                fireAppCacheEvent("checking");
+                            }
 
-                    @Override
-                    public void onChecking() {
-                        fireAppCacheEvent("checking");
-                    }
+                            @Override
+                            public void onDownloading() {
+                                fireAppCacheEvent("downloading");
+                            }
 
-                    @Override
-                    public void onDownloading() {
-                        fireAppCacheEvent("downloading");
-                    }
+                            @Override
+                            public void onError() {
+                                fireAppCacheEvent("error");
+                            }
 
-                    @Override
-                    public void onError() {
-                        fireAppCacheEvent("error");
-                    }
+                            @Override
+                            public void onNoUpdate() {
+                                fireAppCacheEvent("noupdate");
+                            }
 
-                    @Override
-                    public void onNoUpdate() {
-                        fireAppCacheEvent("noupdate");
-                    }
-
-                    @Override
-                    public void onUpdateReady() {
-                        fireAppCacheEvent("updateready");
-                    }
-                })
-                .execute();
+                            @Override
+                            public void onUpdateReady() {
+                                fireAppCacheEvent("updateready");
+                            }
+                        })
+                        .build();
 
         mWebView.setWebViewClient(new WebViewClient() {
             @SuppressWarnings("deprecation")
