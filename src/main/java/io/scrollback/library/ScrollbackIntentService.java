@@ -2,13 +2,20 @@ package io.scrollback.library;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+
 
 public abstract class ScrollbackIntentService extends IntentService {
+    private static final String TAG = "GCM";
 
     public ScrollbackIntentService() {
         super("ScrollbackIntentService");
@@ -30,28 +37,26 @@ public abstract class ScrollbackIntentService extends IntentService {
              * any message types you're not interested in, or that you don't
              * recognize.
              */
-            if (GoogleCloudMessaging.
-                    MESSAGE_TYPE_SEND_ERROR.equals(messageType)) {
-                Log.e(Constants.TAG, "GCM send error: " + extras.toString());
-            } else if (GoogleCloudMessaging.
-                    MESSAGE_TYPE_DELETED.equals(messageType)) {
-                Log.e(Constants.TAG, "GCM messages deleted on server: " +
-                        extras.toString());
-                // If it's a regular GCM message, do some work.
-            } else if (GoogleCloudMessaging.
-                    MESSAGE_TYPE_MESSAGE.equals(messageType)) {
+            if (GoogleCloudMessaging.MESSAGE_TYPE_SEND_ERROR.equals(messageType)) {
+                Log.e(TAG, "Send error: " + extras.toString());
+            } else if (GoogleCloudMessaging.MESSAGE_TYPE_DELETED.equals(messageType)) {
+                Log.e(TAG, "Messages deleted on server: " + extras.toString());
+            } else if (GoogleCloudMessaging.MESSAGE_TYPE_MESSAGE.equals(messageType)) {
+                // If it's a regular GCM message, do some work
 
-                Log.d(Constants.TAG, "gcm_payload: " + extras.toString());
+                Log.d(TAG, "payload: " + extras.toString());
 
-                Log.d(Constants.TAG, "gcm_title: " + extras.getString("title"));
-                Log.d(Constants.TAG, "gcm_subtitle: " + extras.getString("text"));
-                Log.d(Constants.TAG, "gcm_path: " + extras.getString("path"));
+                Log.d(TAG, "title: " + extras.getString("title"));
+                Log.d(TAG, "subtitle: " + extras.getString("text"));
+                Log.d(TAG, "path: " + extras.getString("path"));
+                Log.d(TAG, "picture: " + extras.getString("picture"));
 
                 Notification notif = new Notification();
 
-                notif.setTitle(extras.getString("title", "Scrollback"));
-                notif.setText(extras.getString("text", "There is new activity"));
-                notif.setPath(extras.getString("path", "/me"));
+                notif.setTitle(extras.getString("title"));
+                notif.setText(extras.getString("text"));
+                notif.setPath(extras.getString("path"));
+                notif.setPicture(extras.getString("picture"));
 
                 sendNotification(notif);
             }
@@ -68,9 +73,10 @@ public abstract class ScrollbackIntentService extends IntentService {
 
     public class Notification {
 
-        private String title = "";
-        private String text = "";
-        private String path = "";
+        private String title;
+        private String text;
+        private String path;
+        private String picture;
 
         public String getTitle() {
             return title;
@@ -94,6 +100,44 @@ public abstract class ScrollbackIntentService extends IntentService {
 
         public void setPath(String path) {
             this.path = path;
+        }
+
+        public String getPicture() {
+            return picture;
+        }
+
+        public void setPicture(String picture) {
+            this.picture = picture;
+        }
+
+        public Bitmap getBitmap(String protocol, String host) {
+            URL url = null;
+
+            if (protocol == null) {
+                protocol = Constants.PROTOCOL;
+            }
+
+            if (host == null) {
+                host = Constants.HOST;
+            }
+
+            try {
+                url = new URL(protocol + "//" + host + picture);
+            } catch (MalformedURLException e) {
+                Log.e(TAG, "Malformed URL " + picture, e);
+            }
+
+            if (url != null) {
+                try {
+                    Bitmap image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+
+                    return image;
+                } catch (IOException e) {
+                    Log.e(TAG, "Couldn't fetch image from " + picture, e);
+                }
+            }
+
+            return null;
         }
     }
 }
