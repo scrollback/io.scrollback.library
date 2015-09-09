@@ -539,6 +539,9 @@ public abstract class ScrollbackFragment extends Fragment {
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
 
+                // Show the loading screen
+                showLoading();
+
                 // Refresh cache on reloads
                 cacheManager.refreshCache();
             }
@@ -568,8 +571,6 @@ public abstract class ScrollbackFragment extends Fragment {
                 showLoading();
             }
         });
-
-        showLoading();
 
         FacebookSdk.sdkInitialize(getActivity());
         callbackManager = CallbackManager.Factory.create();
