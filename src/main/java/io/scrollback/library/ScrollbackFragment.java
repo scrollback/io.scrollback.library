@@ -191,10 +191,6 @@ public abstract class ScrollbackFragment extends Fragment {
 
         bridge = new Bridge(mWebView);
 
-        if (customPrimaryStyle != null) {
-            bridge.setStyleSheet(customPrimaryStyle);
-        }
-
         bridge.setOnMessageListener(new ScrollbackMessageHandler() {
             @Override
             public void onNavMessage(NavMessage message) {

@@ -30,6 +30,22 @@ public class Bridge {
         });
     }
 
+    public void onDocumentReady(final String script) {
+        evaluateJavascript(
+                        "(function() {" +
+                        "   if (document.readyState === 'complete') {" +
+                        "       " + script +
+                        "   } else {" +
+                        "       document.onreadystatechange = function() {" +
+                        "           if (document.readyState === 'complete') {" +
+                        "               " + script +
+                        "           }" +
+                        "       }" +
+                        "   }" +
+                        "}())"
+        );
+    }
+
     public void postMessage(final String message) {
         evaluateJavascript("window.postMessage(JSON.stringify(" + message + "), '*')");
     }
@@ -53,15 +69,13 @@ public class Bridge {
     }
 
     public void setStyleSheet(final String sheet) {
-        evaluateJavascript("" +
-        "(function() {" +
-        "    var style = document.getElementById('app-custom-style');" +
-        "    if (!style) {" +
-        "        style = document.createElement('style');" +
-        "        document.head.appendChild(style);" +
-        "    }" +
-        "    style.textContent = '" + sheet.replace("'", "\\'") + "';" +
-        "}())" +
-        "");
+        onDocumentReady(
+                "var style = document.getElementById('app-custom-style');" +
+                "if (!style) {" +
+                "   style = document.createElement('style');" +
+                "   document.head.appendChild(style);" +
+                "}" +
+                "style.textContent = '" + sheet.replace("'", "\\'") + "';"
+        );
     }
 }
