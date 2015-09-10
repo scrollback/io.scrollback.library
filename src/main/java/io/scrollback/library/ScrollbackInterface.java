@@ -25,6 +25,10 @@ public abstract class ScrollbackInterface {
         canChangeStatusBarColor = status;
     }
 
+    public String preProcesorStatusBarColor(String color) {
+        return color;
+    }
+
     @SuppressWarnings("unused")
     @JavascriptInterface
     public String getPackageName() {
@@ -79,10 +83,6 @@ public abstract class ScrollbackInterface {
     }
 
     private void setStatusBarColor(final int color) {
-        if (canChangeStatusBarColor == false) {
-            return;
-        }
-
         final Activity activity = ((Activity) mContext);
 
         activity.runOnUiThread(new Runnable() {
@@ -102,7 +102,11 @@ public abstract class ScrollbackInterface {
     @SuppressWarnings("unused")
     @JavascriptInterface
     public void setStatusBarColor(final String color) {
-        setStatusBarColor(Color.parseColor(color));
+        if (canChangeStatusBarColor == false) {
+            return;
+        }
+
+        setStatusBarColor(Color.parseColor(preProcesorStatusBarColor(color)));
     }
 
     @SuppressWarnings("unused")

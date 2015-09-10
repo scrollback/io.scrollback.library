@@ -6,7 +6,6 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.net.http.SslError;
@@ -88,6 +87,9 @@ public abstract class ScrollbackFragment extends Fragment {
 
     private String initialUrl;
 
+    private String primaryColor;
+    private String primaryDarkColor;
+
     private final String primaryStyle = "" +
             ".button, [type=button], [type=submit], button { background-color: #3ca; }" +
             ".button:focus, [type=button]:focus, [type=submit]:focus, button:focus," +
@@ -104,8 +106,6 @@ public abstract class ScrollbackFragment extends Fragment {
             ".textarea-container:active, .textarea-container:focus, .textarea-container:hover," +
             ".entry:active, .entry:focus, .entry:hover," +
             "input:active, input:focus, input:hover, textarea:active, textarea:focus, textarea:hover { border-color: #3ca; }" +
-            ".thread-color { background-color: #3ca; }" +
-            ".thread-color-dark { background-color: #238b74; }" +
             ".sidebar-right .searchbar { background-color: #3ca; }";
 
     private String customPrimaryStyle;
@@ -121,10 +121,17 @@ public abstract class ScrollbackFragment extends Fragment {
         home = index + path;
     }
 
-    public void setPrimaryColor(int primary, int primaryDark) {
-        customPrimaryStyle = primaryStyle
-                                .replace("#3ca", "#" + Integer.toHexString(primary).substring(2))
-                                .replace("#238b74", "#" + Integer.toHexString(primaryDark).substring(2));
+    private String replacePrimaryColors(String sheet) {
+        return sheet
+                .replace("#3ca", primaryColor)
+                .replace("#238b74", primaryDarkColor);
+    }
+
+    public void setPrimaryColors(String primary, String primaryDark) {
+        primaryColor = primary;
+        primaryDarkColor = primaryDark;
+
+        customPrimaryStyle = replacePrimaryColors(primaryStyle);
 
         if (bridge != null) {
             bridge.setStyleSheet(customPrimaryStyle);
@@ -369,6 +376,10 @@ public abstract class ScrollbackFragment extends Fragment {
         }
 
         sbInterface = new ScrollbackInterface(getActivity()) {
+            @Override
+            public String preProcesorStatusBarColor(String color) {
+                return replacePrimaryColors(color);
+            }
 
             @SuppressWarnings("unused")
             @JavascriptInterface
