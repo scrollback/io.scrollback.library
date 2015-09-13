@@ -3,7 +3,7 @@ Scrollback Android SDK
 
 ## Usage
 
-```
+```java
 public class MainActivity extends FragmentActivity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -33,13 +33,13 @@ public class MainActivity extends FragmentActivity {
 
 ## Debug mode
 
-```
+```java
 fragment.setEnableDebug(true);
 ```
 
 ## API
 
-```
+```java
 fragment.setMessageHandler(new ScrollbackMessageHandler() {
     @Override
     public void onNavMessage(NavMessage message) {
