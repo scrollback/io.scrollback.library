@@ -54,76 +54,6 @@ public class CacheManager {
 
     private String TAG = "CacheManager";
 
-    public interface Callback {
-        void onCached();
-
-        void onChecking();
-
-        void onDownloading();
-
-        void onError();
-
-        void onNoUpdate();
-
-        void onUpdateReady();
-    }
-
-    public static class Builder {
-        private String url;
-        private String path;
-
-        private File cache;
-
-        private AssetManager fallbackAssetManager;
-
-        private String fallbackAssetsPath;
-
-        private boolean unsafeMode;
-
-        private Callback callback;
-
-        public Builder setIndex(String u, String p) {
-            url = u;
-            path = p;
-
-            return this;
-        }
-
-        public Builder setCachePath(File c) {
-            cache = c;
-
-            return this;
-        }
-
-        public Builder setFallback(AssetManager m, String p) {
-            fallbackAssetManager = m;
-            fallbackAssetsPath = p;
-
-            return this;
-        }
-
-        public Builder setUnsafeMode(boolean unsafe) {
-            unsafeMode = unsafe;
-
-            return this;
-        }
-
-        public Builder setCallback(Callback cb) {
-            callback = cb;
-
-            return this;
-        }
-
-        public CacheManager build() {
-            CacheManager c = new CacheManager(url, path, cache, fallbackAssetManager, fallbackAssetsPath);
-
-            c.setUnsafeMode(unsafeMode);
-            c.setCallback(callback);
-
-            return c;
-        }
-    }
-
     CacheManager(String host, String path, File cacheDir, AssetManager fallbackAssetManager, String fallbackAssetsPath) {
         hostUrl = host;
 
@@ -140,6 +70,49 @@ public class CacheManager {
 
         wwwDir = new File(dir, "www");
         tmpDir = new File(dir, "tmp");
+    }
+
+    private static OkHttpClient getUnsafeOkHttpClient() {
+        try {
+            // Create a trust manager that does not validate certificate chains
+            final TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                        }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return null;
+                        }
+                    }
+            };
+
+            // Install the all-trusting trust manager
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+            // Create an ssl socket factory with our all-trusting manager
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+            OkHttpClient okHttpClient = new OkHttpClient();
+            okHttpClient.setSslSocketFactory(sslSocketFactory);
+            okHttpClient.setHostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
+
+            return okHttpClient;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void setUnsafeMode(Boolean value) {
@@ -182,7 +155,7 @@ public class CacheManager {
         byte[] buffer = new byte[1024];
         int read;
 
-        while((read = in.read(buffer)) != -1){
+        while ((read = in.read(buffer)) != -1) {
             out.write(buffer, 0, read);
         }
     }
@@ -217,49 +190,6 @@ public class CacheManager {
 
             in.close();
             out.close();
-        }
-    }
-
-    private static OkHttpClient getUnsafeOkHttpClient() {
-        try {
-            // Create a trust manager that does not validate certificate chains
-            final TrustManager[] trustAllCerts = new TrustManager[] {
-                    new X509TrustManager() {
-                        @Override
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                        }
-
-                        @Override
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                        }
-
-                        @Override
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                            return null;
-                        }
-                    }
-            };
-
-            // Install the all-trusting trust manager
-            final SSLContext sslContext = SSLContext.getInstance("SSL");
-
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-
-            // Create an ssl socket factory with our all-trusting manager
-            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-
-            OkHttpClient okHttpClient = new OkHttpClient();
-            okHttpClient.setSslSocketFactory(sslSocketFactory);
-            okHttpClient.setHostnameVerifier(new HostnameVerifier() {
-                @Override
-                public boolean verify(String hostname, SSLSession session) {
-                    return true;
-                }
-            });
-
-            return okHttpClient;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -552,5 +482,75 @@ public class CacheManager {
         }
 
         return null;
+    }
+
+    public interface Callback {
+        void onCached();
+
+        void onChecking();
+
+        void onDownloading();
+
+        void onError();
+
+        void onNoUpdate();
+
+        void onUpdateReady();
+    }
+
+    public static class Builder {
+        private String url;
+        private String path;
+
+        private File cache;
+
+        private AssetManager fallbackAssetManager;
+
+        private String fallbackAssetsPath;
+
+        private boolean unsafeMode;
+
+        private Callback callback;
+
+        public Builder setIndex(String u, String p) {
+            url = u;
+            path = p;
+
+            return this;
+        }
+
+        public Builder setCachePath(File c) {
+            cache = c;
+
+            return this;
+        }
+
+        public Builder setFallback(AssetManager m, String p) {
+            fallbackAssetManager = m;
+            fallbackAssetsPath = p;
+
+            return this;
+        }
+
+        public Builder setUnsafeMode(boolean unsafe) {
+            unsafeMode = unsafe;
+
+            return this;
+        }
+
+        public Builder setCallback(Callback cb) {
+            callback = cb;
+
+            return this;
+        }
+
+        public CacheManager build() {
+            CacheManager c = new CacheManager(url, path, cache, fallbackAssetManager, fallbackAssetsPath);
+
+            c.setUnsafeMode(unsafeMode);
+            c.setCallback(callback);
+
+            return c;
+        }
     }
 }

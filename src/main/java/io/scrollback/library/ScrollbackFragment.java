@@ -49,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-
 import static android.webkit.WebSettings.LOAD_DEFAULT;
 
 public abstract class ScrollbackFragment extends Fragment {
@@ -356,15 +355,11 @@ public abstract class ScrollbackFragment extends Fragment {
 
         WebSettings mWebSettings = mWebView.getSettings();
 
-//        String appCachePath = getActivity().getCacheDir().getAbsolutePath();
-
         mWebSettings.setJavaScriptEnabled(true);
         mWebSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         mWebSettings.setSupportZoom(false);
         mWebSettings.setSaveFormData(true);
         mWebSettings.setDomStorageEnabled(true);
-//        mWebSettings.setAppCacheEnabled(true);
-//        mWebSettings.setAppCachePath(appCachePath);
         mWebSettings.setAllowFileAccess(true);
         mWebSettings.setCacheMode(LOAD_DEFAULT);
 
@@ -696,11 +691,9 @@ public abstract class ScrollbackFragment extends Fragment {
                                 }
                             }
                         }).executeAsync();
-            }
-            else {
+            } else {
                 Toast.makeText(getActivity(), getString(R.string.signin_fail_error), Toast.LENGTH_SHORT).show();
             }
-
 
 
         }
@@ -727,27 +720,19 @@ public abstract class ScrollbackFragment extends Fragment {
 
             mUploadMessage.onReceiveValue(result);
             mUploadMessage = null;
-        }
-
-        else if (requestCode == REQUEST_SELECT_FILE) {
+        } else if (requestCode == REQUEST_SELECT_FILE) {
             if (mUploadMessageArr == null) return;
 
             mUploadMessageArr.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
             mUploadMessageArr = null;
-        }
-
-        else if (requestCode == Constants.SOME_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+        } else if (requestCode == Constants.SOME_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
 
             googleSetup.retriveGoogleToken(accountName);
-        }
-
-        else if (requestCode == Constants.REQ_SIGN_IN_REQUIRED && resultCode == Activity.RESULT_OK) {
+        } else if (requestCode == Constants.REQ_SIGN_IN_REQUIRED && resultCode == Activity.RESULT_OK) {
             // We had to sign in - now we can finish off the token request.
             googleSetup.retriveGoogleToken(accountName);
-        }
-
-        else {
+        } else {
             callbackManager.onActivityResult(requestCode, resultCode, data);
         }
     }
