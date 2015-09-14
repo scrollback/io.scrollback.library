@@ -472,11 +472,15 @@ public abstract class ScrollbackFragment extends Fragment {
                         .build();
 
         mWebView.setWebViewClient(new WebViewClient() {
+            private String regex = "^/(?!socket)[a-z0-9-]+(/[a-z0-9-]+)?";
+
             @SuppressWarnings("deprecation")
             @Override
             public WebResourceResponse shouldInterceptRequest(final WebView view, String requestUrl) {
                 if (requestUrl.startsWith(index)) {
-                    WebResourceResponse res = cacheManager.getCachedResponse(Uri.parse(requestUrl).getPath());
+                    String path = Uri.parse(requestUrl).getPath();
+
+                    WebResourceResponse res = cacheManager.getCachedResponse(path.matches(regex) ? "/me" : path);
 
                     if (res != null) {
                         return res;
@@ -492,7 +496,9 @@ public abstract class ScrollbackFragment extends Fragment {
                 Uri url = request.getUrl();
 
                 if (url.toString().startsWith(index)) {
-                    WebResourceResponse res = cacheManager.getCachedResponse(url.getPath());
+                    String path = url.getPath();
+
+                    WebResourceResponse res = cacheManager.getCachedResponse(path.matches(regex) ? "/me" : path);
 
                     if (res != null) {
                         return res;
