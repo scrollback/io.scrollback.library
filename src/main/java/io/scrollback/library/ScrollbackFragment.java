@@ -52,6 +52,8 @@ import java.util.List;
 import static android.webkit.WebSettings.LOAD_DEFAULT;
 
 public abstract class ScrollbackFragment extends Fragment {
+    private String HEYNBR = "heyneighbor.chat";
+
     private String accountName;
 
     private WebView mWebView;
@@ -472,7 +474,7 @@ public abstract class ScrollbackFragment extends Fragment {
             @SuppressWarnings("deprecation")
             @Override
             public WebResourceResponse shouldInterceptRequest(final WebView view, String requestUrl) {
-                if (requestUrl.startsWith(index)) {
+                if (requestUrl.startsWith(index) || Uri.parse(requestUrl).getHost().equals(HEYNBR)) {
                     String path = Uri.parse(requestUrl).getPath();
 
                     WebResourceResponse res = cacheManager.getCachedResponse(path.matches(regex) ? "/me" : path);
@@ -490,7 +492,7 @@ public abstract class ScrollbackFragment extends Fragment {
             public WebResourceResponse shouldInterceptRequest(final WebView view, WebResourceRequest request) {
                 Uri url = request.getUrl();
 
-                if (url.toString().startsWith(index)) {
+                if (url.toString().startsWith(index) || url.getHost().equals(HEYNBR)) {
                     String path = url.getPath();
 
                     WebResourceResponse res = cacheManager.getCachedResponse(path.matches(regex) ? "/me" : path);
@@ -516,7 +518,7 @@ public abstract class ScrollbackFragment extends Fragment {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 Uri uri = Uri.parse(url);
 
-                if (uri.getAuthority().equals(origin)) {
+                if (uri.getHost().equals(origin) || uri.getHost().equals(HEYNBR)) {
                     // This is my web site, so do not override; let my WebView load the page
                     return false;
 
@@ -524,6 +526,7 @@ public abstract class ScrollbackFragment extends Fragment {
                 } else {
                     // Otherwise, the link is not for a page on my site, so launch another Activity that handles URLs
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+
                     startActivity(intent);
 
                     return true;
